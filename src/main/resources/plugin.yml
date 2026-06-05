@@ -1,0 +1,9 @@
+name: AdvancedChunkHoppers
+description: $description
+version: '${version}'
+
+main: net.omni.ach.AdvancedChunkHoppers
+api-version: '1.21.11'
+load: POSTWORLD
+
+authors: [ domninos ]
