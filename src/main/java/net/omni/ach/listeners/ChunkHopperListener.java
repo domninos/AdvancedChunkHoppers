@@ -10,9 +10,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -60,15 +62,13 @@ public class ChunkHopperListener implements Listener {
             // fallback - shouldn't use async since hoppers automatically load on chunk load event
             plugin.getCacheManager().getOrCreate(hopper.getLocation()).whenComplete((inventory, throwable) -> {
                 if (inventory == null || throwable != null) {
-                    Bukkit.getLogger().warning("An error has occurred while getting GUI: " + throwable.getMessage());
+                    plugin.getLogger().warning("An error has occurred while getting GUI: " + throwable.getMessage());
                     return;
                 }
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (!plugin.getGuiManager().canFitItem(inventory, drop)) {
-                        // inventory is full
+                    if (!plugin.getGuiManager().canFitItem(inventory, drop))
                         return;
-                    }
 
                     Map<Integer, ItemStack> leftovers = inventory.addItem(drop);
 
@@ -100,11 +100,45 @@ public class ChunkHopperListener implements Listener {
 
         // TODO create / register / load hopper
 
+        // TODO use ChunkHopper
+
+    }
+
+    @EventHandler
+    public void onHopperBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+
+        if (!plugin.getChunkHopperManager().isACH(block))
+            return;
+
+        Player player = event.getPlayer();
+
+        if (!plugin.getGuiManager().isOwner(player, block)) {
+            event.setCancelled(true);
+
+            // TODO messages.yml
+            plugin.sendMessage(player, "<red>You do not have permission to break this.</red>");
+            return;
+        }
+
+        // TODO dropped inventory
     }
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
         plugin.getChunkHopperManager().loadFromChunkAsync(event.getChunk());
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        // save to database
+
+        Chunk chunk = event.getChunk();
+
+        if (!plugin.getChunkHopperManager().hasHopper(chunk)) {
+        }
+
+        // has hopper
     }
 
 
