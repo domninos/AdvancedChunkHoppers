@@ -1,7 +1,8 @@
-package net.omni.ach.gui;
+package net.omni.ach.managers;
 
+import net.brcdev.gangs.GangsPlusApi;
+import net.brcdev.gangs.gang.Gang;
 import net.omni.ach.AdvancedChunkHoppers;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
@@ -10,6 +11,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.Objects;
+import java.util.UUID;
 
 public class GUIManager {
 
@@ -23,34 +27,65 @@ public class GUIManager {
     }
 
     public void openMainMenu(Player player, Block hopperBlock) {
-        if (player == null)
+        if (player == null || hopperBlock == null)
             return;
 
         // check if hopper
         if (!(plugin.getChunkHopperManager().isACH(hopperBlock)))
             return;
 
-        Hopper hopper = (Hopper) hopperBlock.getState();
+        UUID uuid = getOwnerUUID(hopperBlock);
+
+        if (uuid == null)
+            return;
 
         // check ownership
-        String ownerUUID = hopper.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
-
-        if (ownerUUID == null || !ownerUUID.equals(player.getUniqueId().toString())) {
+        if (!isOwner(player, hopperBlock)) {
             // TODO messages.yml
-            plugin.sendMessage(player, "<red>You do not have permission to open this hopper. </red>");
+            plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
             return;
+        }
+
+        // check gang
+        if (plugin.isGangsEnabled()) {
+            // check if team member of the owner
+            if (GangsPlusApi.isInGang(player)) {
+                Gang gang = GangsPlusApi.getPlayersGang(player);
+
+                if (gang == null)
+                    return;
+
+                boolean isSameGang = gang.getAllMembers().stream().filter(Objects::nonNull).anyMatch(member -> member.getUniqueId().equals(uuid));
+
+                if (!isSameGang) {
+                    // TODO messages.yml
+                    plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
+                    return;
+                }
+            }
         }
 
         // close inventory if somehow they have another inventory opened
         player.closeInventory();
 
-        // TODO config title
         plugin.getCacheManager().getOrCreate(hopperBlock.getLocation()).whenComplete((mainGUI, err) -> {
             if (err != null)
-                Bukkit.getLogger().warning("An error has occurred while making GUI: " + err.getMessage());
+                plugin.getLogger().warning("An error has occurred while making GUI: " + err.getMessage());
             else
                 player.openInventory(mainGUI);
         });
+    }
+
+    public UUID getOwnerUUID(Block block) {
+        if (block == null || !(block.getState() instanceof Hopper hopper))
+            return null;
+
+        String ownerUUID = hopper.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
+        return ownerUUID == null ? null : UUID.fromString(ownerUUID);
+    }
+
+    public boolean isOwner(Player player, Block block) {
+        return getOwnerUUID(block) != null && getOwnerUUID(block).equals(player.getUniqueId());
     }
 
     public boolean canFitItem(Inventory inventory, ItemStack item) {
