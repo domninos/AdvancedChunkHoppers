@@ -3,23 +3,26 @@ package net.omni.ach.managers;
 import net.omni.ach.AdvancedChunkHoppers;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class ChunkHopperManager {
-
     private final AdvancedChunkHoppers plugin;
 
     private final Map<Long, Location> chunkHoppers = new HashMap<>();
     private final Map<UUID, Integer> hopperLimits = new HashMap<>();
+
+    private static final NamespacedKey ACH_KEY = new NamespacedKey("customcrafting", "utilities/chunk_hopper");
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
@@ -42,13 +45,19 @@ public class ChunkHopperManager {
             // TODO
             // already loaded
 
-            return;
         }
 
         // TODO from database
 
     }
 
+    /**
+     * Checks if {@linkplain Chunk} has a ChunkHopper.
+     *
+     * @param chunk the chunk to check
+     * @return true - if the chunk contains a ChunkHopper.
+     * false - if the chunk is not loaded or its entities are not loaded
+     */
     public boolean hasHopper(Chunk chunk) {
         if (chunk == null)
             return false;
@@ -66,9 +75,10 @@ public class ChunkHopperManager {
         // check pdc
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
 
-        return pdc.has(plugin.getGuiManager().getOwnerKey(), PersistentDataType.STRING);
+        return pdc.has(ACH_KEY);
     }
 
+    @Nullable
     public Hopper getChunkHopper(Chunk chunk) {
         if (!hasHopper(chunk))
             return null;
@@ -109,6 +119,7 @@ public class ChunkHopperManager {
         return 5;
     }
 
+    // TODO should check for limit perms
     public Container getBottomContainer(Block hopper) {
         Block blockBelow = hopper.getRelative(0, -1, 0);
 
