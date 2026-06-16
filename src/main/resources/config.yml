@@ -1,0 +1,35 @@
+# customizable items for the whitelist, blacklist, and the back button.
+#
+# If you need help, please join my discord server: https://discord.gg/7CuCtDHmQ3
+#
+# IMPORTANT: make sure the slot only at the very last row of slots. otherwise the inventory may not work properly.
+# !!! You have been warned!
+hopper:
+  # the size of the inventory
+  # !!! make sure the size and the slots of the whitelist, blacklist, back_button must match.
+  # !!! should also be greater than 18 for the whitelist, blacklist, back buttons items.
+  # default: 57
+  size: 57
+  title: "<green>%player%'s ChunkHopper</green>" # placeholder: %player%
+
+  ###
+  # you must use an all caps MATERIAL type
+  # get the correct material type here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
+  whitelist:
+    material: LIGHT_GREEN_STAINED_GLASS_PANE
+    slot: 47
+    display_name: "<dark_green>Whitelist</dark_green>"
+  back_button:
+    material: BARRIER
+    slot: 49
+    display_name: "<light_red><b>Exit</b></light_red>"
+  blacklist:
+    material: RED_STAINED_GLASS_PANE
+    slot: 51
+    display_name: "<b><gradient:#F16262:#000000>FREEDOM</gradient><gradient:#000000:#000000> DROPS</gradient></b>"
+
+# luckperms-based max chests placed underneath the hopper
+# you may add other ranks and limits here as well
+limits:
+  knight: 2 # lp.group.knight
+  lord: 4 # lp.group.lord
