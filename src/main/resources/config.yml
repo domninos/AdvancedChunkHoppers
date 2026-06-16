@@ -8,25 +8,59 @@ hopper:
   # the size of the inventory
   # !!! make sure the size and the slots of the whitelist, blacklist, back_button must match.
   # !!! should also be greater than 18 for the whitelist, blacklist, back buttons items.
-  # default: 57
-  size: 57
+  # default: 54
+  size: 54
   title: "<green>%player%'s ChunkHopper</green>" # placeholder: %player%
 
   ###
   # you must use an all caps MATERIAL type
   # get the correct material type here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
+
+  filler: # the filler will fill out the entire last row of all inventories (including whitelist and blacklist)
+    material: GRAY_STAINED_GLASS_PANE
+    display_name: " "
+
   whitelist:
     material: LIGHT_GREEN_STAINED_GLASS_PANE
     slot: 47
     display_name: "<dark_green>Whitelist</dark_green>"
+    lore:
+      - " <white>WHITELIST LORE</white> "
   back_button:
     material: BARRIER
     slot: 49
     display_name: "<light_red><b>Exit</b></light_red>"
+    lore:
+      - " <green>BACK BUTTON LORE<green> "
   blacklist:
     material: RED_STAINED_GLASS_PANE
     slot: 51
     display_name: "<b><gradient:#F16262:#000000>FREEDOM</gradient><gradient:#000000:#000000> DROPS</gradient></b>"
+    lore:
+      - " <yellow>BLACKLIST LORE</yellow> "
+
+whitelist_inventory:
+  # the size of the inventory
+  # !!! make sure the size and back_button slot must.
+  # !!! should also be greater than 18 for the back button.
+  # default: 27
+  size: 27
+  title: "<green>ChunkHopper's Whitelist</green>"
+
+  # where the back button should appear
+  back_button_slot: 22
+
+
+blacklist_inventory:
+  # the size of the inventory
+  # !!! make sure the size and back_button slot must.
+  # !!! should also be greater than 18 for the back button.
+  # default: 27
+  size: 27
+  title: "<green>ChunkHopper's Blacklist</green>"
+
+  # where the back button should appear
+  back_button_slot: 22
 
 # luckperms-based max chests placed underneath the hopper
 # you may add other ranks and limits here as well
