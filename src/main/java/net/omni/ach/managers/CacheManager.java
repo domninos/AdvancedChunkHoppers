@@ -2,12 +2,14 @@ package net.omni.ach.managers;
 
 import net.kyori.adventure.text.Component;
 import net.omni.ach.AdvancedChunkHoppers;
+import net.omni.ach.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,47 +36,50 @@ public class CacheManager {
             return future;
         }
 
-        Inventory mainGUI = createInventory(location, true, future);
+        createInventory(location, future);
 
         return future;
     }
 
-    // should be sync
-    // make sure to
-    public Inventory createInventory(Location location, boolean loadFromDB, CompletableFuture<Inventory> future) {
-        // TODO config size and title
-        Inventory mainGUI = Bukkit.createInventory(null, 54, Component.text("Inventory"));
+    public void createInventory(Location location, @Nullable CompletableFuture<Inventory> future) {
+        int hopperSize = plugin.getConfigUtil().getHopperSize();
+
+        Inventory mainGUI = Bukkit.createInventory(null, hopperSize, MessageUtil.parse(plugin.getConfigUtil().getHopperTitle()));
 
         // filler
-        // TODO filter, whitelist, and blacklist item config
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        for (int i = hopperSize - 1; i >= (hopperSize - 9); i--)
+            mainGUI.setItem(i, createItem(plugin.getConfigUtil().getFillerMat(), plugin.getConfigUtil().getFillerDisplayName()));
 
-        for (int i = 27; i < 54; i++) {
-            if (i == 38) {
-                mainGUI.setItem(38, createItem(Material.GREEN_WOOL, "Manage Whitelist"));
-                continue;
-            } else if (i == 42) {
-                mainGUI.setItem(42, createItem(Material.REDSTONE_BLOCK, "Manage Blacklist"));
-                continue;
-            }
+        // whitelist
+        mainGUI.setItem(plugin.getConfigUtil().getWhitelistSlot(),
+                createItem(plugin.getConfigUtil().getWhitelistMat(),
+                        plugin.getConfigUtil().getWhitelistDisplayName()));
 
-            mainGUI.setItem(i, filler);
-        }
+        // back button
+        mainGUI.setItem(plugin.getConfigUtil().getBackButtonSlot(),
+                createItem(plugin.getConfigUtil().getBackButtonMat(),
+                        plugin.getConfigUtil().getBackButtonDisplayName()));
 
-        if (loadFromDB) {
+        // blacklist
+        mainGUI.setItem(plugin.getConfigUtil().getBlacklistSlot(),
+                createItem(plugin.getConfigUtil().getBlacklistMat(),
+                        plugin.getConfigUtil().getBlacklistDisplayName()));
+
+        // TODO only store in inventory if the chest underneath is null or are all full
+
+        if (future != null) {
             // generate rows from the items stored in database
             plugin.getDatabaseManager().fetchItems(location).whenComplete((items, throwable) -> {
                 if (throwable != null) {
                     future.completeExceptionally(throwable);
 
-                    Bukkit.getLogger().warning("An error has occurred while fetching items: " + throwable.getMessage());
+                    plugin.getLogger().warning("An error has occurred while fetching items: " + throwable.getMessage());
                     return;
                 }
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    for (int i = 0; i < Math.min(items.size(), 27); i++) {
+                    for (int i = 0; i < Math.min(items.size(), 27); i++)
                         mainGUI.setItem(i, items.get(i));
-                    }
 
                     future.complete(mainGUI);
                 });
@@ -82,16 +87,17 @@ public class CacheManager {
             });
         }
 
-        activeHopperCache.put(location, mainGUI);
+        // TODO use ChunkHopper
+        // TODO load whitelist and blacklist
 
-        return mainGUI;
+        activeHopperCache.put(location, mainGUI);
     }
 
     private ItemStack createItem(Material material, String name, Component... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.displayName(Component.text(name));
+        meta.customName(MessageUtil.parse(name));
 
         if (lore != null && lore.length > 0)
             meta.lore(List.of(lore));
@@ -118,6 +124,8 @@ public class CacheManager {
 
     // TODO make sure everything is saved before invalidating cache
     public void invalidateAll() {
+        // TODO db
+
         activeHopperCache.clear();
     }
 
