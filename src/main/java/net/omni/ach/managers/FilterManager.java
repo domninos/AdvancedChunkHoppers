@@ -1,41 +1,20 @@
 package net.omni.ach.managers;
 
-import org.bukkit.Location;
+import net.omni.ach.chunkhopper.ChunkHopper;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class FilterManager {
 
-    private static final Set<ItemStack> WHITELISTED = new HashSet<>();
-    private static final Set<ItemStack> BLACKLISTED = new HashSet<>();
+    public boolean shouldCollect(ChunkHopper hopper, ItemStack itemStack) {
+        if (hopper == null || itemStack == null)
+            return false;
 
-    private boolean useWhitelist = false;
+        return hopper.shouldCollect(itemStack);
+    }
 
     public void init() {
-        // load useWhitelist
-
     }
-
-    public boolean shouldCollect(Location hopperLocation, ItemStack itemStack) {
-        // TODO check if the specific hopper is collecting any items
-        return false;
-    }
-
-    public void addToWhitelist(ItemStack itemStack) {
-        WHITELISTED.add(itemStack);
-    }
-
-    public void addToBlacklist(ItemStack itemStack) {
-        BLACKLISTED.add(itemStack);
-    }
-
 
     public void flush() {
-        WHITELISTED.clear();
-        BLACKLISTED.clear();
     }
-
-
 }

@@ -2,6 +2,7 @@ package net.omni.ach.util;
 
 import net.omni.ach.AdvancedChunkHoppers;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.HashMap;
@@ -36,6 +37,22 @@ public class ConfigUtil {
     private String blacklist_display_name;
     private List<String> blacklist_lore;
 
+    private int whitelist_inventory_size;
+    private String whitelist_inventory_title;
+    private int whitelist_inventory_back_slot;
+
+    private int blacklist_inventory_size;
+    private String blacklist_inventory_title;
+    private int blacklist_inventory_back_slot;
+
+    private String whitelist_add_sound;
+    private float whitelist_add_sound_volume;
+    private float whitelist_add_sound_pitch;
+
+    private String blacklist_add_sound;
+    private float blacklist_add_sound_volume;
+    private float blacklist_add_sound_pitch;
+
     public ConfigUtil(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
     }
@@ -69,6 +86,28 @@ public class ConfigUtil {
         this.blacklist_slot = getAndDefaultSlot("hopper.blacklist.slot", 51, savedDefaults::getAndAdd);
         this.blacklist_display_name = getAndDefaultString("hopper.blacklist.display_name", "<b><gradient:#F16262:#000000>FREEDOM</gradient><gradient:#000000:#000000> DROPS</gradient></b>", savedDefaults::getAndAdd);
         this.blacklist_lore = plugin.getConfig().getStringList("hopper.blacklist.lore");
+
+        this.whitelist_inventory_size = getAndDefaultSlot("whitelist_inventory.size", 27, savedDefaults::getAndAdd);
+        if (whitelist_inventory_size < 18) {
+            this.whitelist_inventory_size = 18;
+            plugin.getConfig().set("whitelist_inventory.size", 18);
+            savedDefaults.getAndIncrement();
+        }
+        this.whitelist_inventory_title = getAndDefaultString("whitelist_inventory.title",
+                "<green>ChunkHopper's Whitelist</green>", savedDefaults::getAndAdd);
+        this.whitelist_inventory_back_slot = getAndDefaultSlot("whitelist_inventory.back_button_slot",
+                22, savedDefaults::getAndAdd);
+
+        this.blacklist_inventory_size = getAndDefaultSlot("blacklist_inventory.size", 27, savedDefaults::getAndAdd);
+        if (blacklist_inventory_size < 18) {
+            this.blacklist_inventory_size = 18;
+            plugin.getConfig().set("blacklist_inventory.size", 18);
+            savedDefaults.getAndIncrement();
+        }
+        this.blacklist_inventory_title = getAndDefaultString("blacklist_inventory.title",
+                "<green>ChunkHopper's Blacklist</green>", savedDefaults::getAndAdd);
+        this.blacklist_inventory_back_slot = getAndDefaultSlot("blacklist_inventory.back_button_slot",
+                22, savedDefaults::getAndAdd);
 
         ConfigurationSection limitsSection = plugin.getConfig().getConfigurationSection("limits");
 
@@ -166,7 +205,7 @@ public class ConfigUtil {
         return back_button_display_name;
     }
 
-    public List<String> getBackButtonLoreSize() {
+    public List<String> getBackButtonLore() {
         return back_button_lore;
     }
 
@@ -188,6 +227,30 @@ public class ConfigUtil {
 
     public Map<String, Integer> getLimitsMap() {
         return limitsMap;
+    }
+
+    public int getWhitelistInventorySize() {
+        return whitelist_inventory_size;
+    }
+
+    public String getWhitelistInventoryTitle() {
+        return whitelist_inventory_title;
+    }
+
+    public int getWhitelistInventoryBackSlot() {
+        return whitelist_inventory_back_slot;
+    }
+
+    public int getBlacklistInventorySize() {
+        return blacklist_inventory_size;
+    }
+
+    public String getBlacklistInventoryTitle() {
+        return blacklist_inventory_title;
+    }
+
+    public int getBlacklistInventoryBackSlot() {
+        return blacklist_inventory_back_slot;
     }
 
     public void flush() {

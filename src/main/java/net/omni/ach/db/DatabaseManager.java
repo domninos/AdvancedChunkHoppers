@@ -47,16 +47,19 @@ public class DatabaseManager {
 
         this.dataSource = new HikariDataSource(config);
 
-        // create table
+        // create table with all columns
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS chunk_hoppers (
                         location_key TEXT PRIMARY KEY,
                         owner_uuid TEXT,
-                        base64_items TEXT);
+                        base64_items TEXT,
+                        whitelist_base64 TEXT,
+                        blacklist_base64 TEXT);
                     """);
             stmt.execute("PRAGMA journal_mode=WAL");
+            migrateSchema(conn);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Error while creating the database!", e);
         }
@@ -72,15 +75,27 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<List<ItemStack>> fetchItems(Location location) {
+        return fetchColumn(location, "base64_items");
+    }
+
+    public CompletableFuture<List<ItemStack>> fetchWhitelist(Location location) {
+        return fetchColumn(location, "whitelist_base64");
+    }
+
+    public CompletableFuture<List<ItemStack>> fetchBlacklist(Location location) {
+        return fetchColumn(location, "blacklist_base64");
+    }
+
+    private CompletableFuture<List<ItemStack>> fetchColumn(Location location, String column) {
         String locationKey = getLocationKey(location);
 
         if (locationKey.isBlank())
-            return null;
+            return CompletableFuture.completedFuture(List.of());
 
         CompletableFuture<List<ItemStack>> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            String query = "SELECT base64_items FROM chunk_hoppers WHERE location_key = ?";
+            String query = "SELECT " + column + " FROM chunk_hoppers WHERE location_key = ?";
 
             try (Connection connection = getConnection();
                  PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -89,7 +104,7 @@ public class DatabaseManager {
 
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        String base64 = rs.getString("base64_items");
+                        String base64 = rs.getString(column);
                         if (base64 != null && !base64.isEmpty())
                             future.complete(ItemSerializationUtil.fromBase64(base64));
                         else
@@ -100,18 +115,43 @@ public class DatabaseManager {
                 }
             } catch (SQLException e) {
                 future.completeExceptionally(e);
-                plugin.getLogger().log(Level.SEVERE, "Error while fetching items from the database!", e);
+                plugin.getLogger().log(Level.SEVERE, "Error while fetching " + column + " from database!", e);
             }
         });
 
         return future;
     }
 
-    private String getLocationKey(Location location) {
-        if (location == null)
-            return "";
+    public void saveFull(Location location, String ownerUUID, List<ItemStack> items,
+                         List<ItemStack> whitelist, List<ItemStack> blacklist) {
+        String locationKey = getLocationKey(location);
 
-        return location.getWorld().getName() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
+        if (locationKey.isBlank())
+            return;
+
+        String base64Items = ItemSerializationUtil.toBase64(items);
+        String base64Whitelist = ItemSerializationUtil.toBase64(whitelist);
+        String base64Blacklist = ItemSerializationUtil.toBase64(blacklist);
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String query = """
+                    INSERT OR REPLACE INTO chunk_hoppers
+                        (location_key, owner_uuid, base64_items, whitelist_base64, blacklist_base64)
+                    VALUES (?, ?, ?, ?, ?);
+                    """;
+
+            try (Connection connection = getConnection();
+                 PreparedStatement stmt = connection.prepareStatement(query)) {
+                stmt.setString(1, locationKey);
+                stmt.setString(2, ownerUUID);
+                stmt.setString(3, base64Items);
+                stmt.setString(4, base64Whitelist);
+                stmt.setString(5, base64Blacklist);
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "Error while saving to database!", e);
+            }
+        });
     }
 
     public void saveAsync(Location location, List<ItemStack> items) {
@@ -137,6 +177,25 @@ public class DatabaseManager {
                 plugin.getLogger().log(Level.SEVERE, "Error while saving the database!", e);
             }
         });
+    }
+
+    private void migrateSchema(Connection conn) {
+        String[] newColumns = {"whitelist_base64", "blacklist_base64"};
+        for (String col : newColumns) {
+            String sql = "ALTER TABLE chunk_hoppers ADD COLUMN " + col + " TEXT;";
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(sql);
+            } catch (SQLException ignored) {
+                // column likely already exists
+            }
+        }
+    }
+
+    private String getLocationKey(Location location) {
+        if (location == null)
+            return "";
+
+        return location.getWorld().getName() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
     }
 
     public void closePool() {

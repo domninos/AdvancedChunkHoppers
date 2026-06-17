@@ -1,12 +1,14 @@
 package net.omni.ach.listeners;
 
 import net.omni.ach.AdvancedChunkHoppers;
-import org.bukkit.Bukkit;
+import net.omni.ach.chunkhopper.ChunkHopper;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -21,7 +23,6 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Map;
 
 public class ChunkHopperListener implements Listener {
-    // TODO create custom event
 
     private final AdvancedChunkHoppers plugin;
 
@@ -37,52 +38,32 @@ public class ChunkHopperListener implements Listener {
         if (!plugin.getChunkHopperManager().hasHopper(chunk))
             return;
 
-        // find hopper
-        Hopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
-        if (hopper == null) return; // if somehow hopper is still null
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
+        if (hopper == null)
+            return;
 
         ItemStack drop = event.getEntity().getItemStack();
 
-        // filter
-        if (!plugin.getFilterManager().shouldCollect(hopper.getLocation(), drop))
+        if (!plugin.getFilterManager().shouldCollect(hopper, drop))
             return;
 
-        if (plugin.getCacheManager().hasCache(hopper.getLocation())) {
-            Inventory inventory = plugin.getCacheManager().getCachedInventory(hopper.getLocation());
+        if (hopper.canFitItem(drop)) {
+            Inventory inventory = hopper.mainInventory();
+            Map<Integer, ItemStack> leftovers = inventory.addItem(drop);
 
-            if (plugin.getGuiManager().canFitItem(inventory, drop)) {
-                Map<Integer, ItemStack> leftovers = inventory.addItem(drop);
-
-                if (leftovers.isEmpty())
-                    event.setCancelled(true);
-                else
-                    event.getEntity().setItemStack(leftovers.get(0));
-            }
-        } else {
-            // fallback - shouldn't use async since hoppers automatically load on chunk load event
-            plugin.getCacheManager().getOrCreate(hopper.getLocation()).whenComplete((inventory, throwable) -> {
-                if (inventory == null || throwable != null) {
-                    plugin.getLogger().warning("An error has occurred while getting GUI: " + throwable.getMessage());
-                    return;
-                }
-
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (!plugin.getGuiManager().canFitItem(inventory, drop))
-                        return;
-
-                    Map<Integer, ItemStack> leftovers = inventory.addItem(drop);
-
-                    if (leftovers.isEmpty())
-                        event.setCancelled(true);
-                    else
-                        event.getEntity().setItemStack(leftovers.get(0));
-                });
-            });
+            if (leftovers.isEmpty())
+                event.setCancelled(true);
+            else
+                event.getEntity().setItemStack(leftovers.get(0));
         }
     }
 
+    /*
+
+     */
+
     @EventHandler(ignoreCancelled = true)
-    public void oHopperPlace(BlockPlaceEvent event) {
+    public void onHopperPlace(BlockPlaceEvent event) {
         Block block = event.getBlockPlaced();
 
         if (!plugin.getChunkHopperManager().isACH(block))
@@ -90,18 +71,23 @@ public class ChunkHopperListener implements Listener {
 
         Player player = event.getPlayer();
 
-        // TODO check for permission (limits)
         int limit = plugin.getChunkHopperManager().getHopperLimit(player);
 
         if (limit != -1) {
-            // if not admin or unlimited
-
+            // TODO check current count against limit
         }
 
-        // TODO create / register / load hopper
+        if (block.getState() instanceof Hopper hopper) {
+            hopper.getPersistentDataContainer().set(
+                    plugin.getGuiManager().getOwnerKey(),
+                    PersistentDataType.STRING,
+                    player.getUniqueId().toString()
+            );
 
-        // TODO use ChunkHopper
+            hopper.update();
 
+            // register hopper
+        }
     }
 
     @EventHandler
@@ -113,15 +99,31 @@ public class ChunkHopperListener implements Listener {
 
         Player player = event.getPlayer();
 
-        if (!plugin.getGuiManager().isOwner(player, block)) {
+        if (plugin.getGuiManager().getOwnerUUID(block) != null
+                && !plugin.getGuiManager().isOwner(player, block)) {
             event.setCancelled(true);
-
-            // TODO messages.yml
             plugin.sendMessage(player, "<red>You do not have permission to break this.</red>");
             return;
         }
 
-        // TODO dropped inventory
+        ChunkHopper hopper = plugin.getCacheManager().getCachedHopper(block.getLocation());
+
+        if (hopper != null) {
+            for (int i = 0; i < ChunkHopper.ITEM_SLOTS; i++) {
+                ItemStack item = hopper.mainInventory().getItem(i);
+
+                if (item != null && item.getType() != Material.AIR) {
+                    block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), item);
+                    hopper.mainInventory().clear(i);
+                }
+            }
+
+            hopper.save(plugin);
+            plugin.getCacheManager().invalidate(block.getLocation());
+        }
+
+        Chunk chunk = block.getChunk();
+        plugin.getChunkHopperManager().unregisterHopper(chunk);
     }
 
     @EventHandler
@@ -131,16 +133,20 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
-        // save to database
-
         Chunk chunk = event.getChunk();
 
-        if (!plugin.getChunkHopperManager().hasHopper(chunk)) {
+        if (!plugin.getChunkHopperManager().hasHopper(chunk))
+            return;
+
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
+
+        if (hopper != null) {
+            hopper.save(plugin);
+            plugin.getCacheManager().invalidate(hopper.location());
         }
 
-        // has hopper
+        plugin.getChunkHopperManager().unregisterHopper(chunk);
     }
-
 
     public void register() {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);

@@ -3,15 +3,17 @@ package net.omni.ach.managers;
 import net.brcdev.gangs.GangsPlusApi;
 import net.brcdev.gangs.gang.Gang;
 import net.omni.ach.AdvancedChunkHoppers;
-import org.bukkit.Material;
+import net.omni.ach.chunkhopper.ChunkHopper;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -20,9 +22,10 @@ public class GUIManager {
     private final NamespacedKey ownerKey;
     private final AdvancedChunkHoppers plugin;
 
+    private final Map<UUID, Location> openHoppers = new HashMap<>();
+
     public GUIManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
-
         this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
     }
 
@@ -30,7 +33,6 @@ public class GUIManager {
         if (player == null || hopperBlock == null)
             return;
 
-        // check if hopper
         if (!(plugin.getChunkHopperManager().isACH(hopperBlock)))
             return;
 
@@ -39,41 +41,63 @@ public class GUIManager {
         if (uuid == null)
             return;
 
-        // check ownership
         if (!isOwner(player, hopperBlock)) {
-            // TODO messages.yml
-            plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
-            return;
-        }
-
-        // check gang
-        if (plugin.isGangsEnabled()) {
-            // check if team member of the owner
-            if (GangsPlusApi.isInGang(player)) {
-                Gang gang = GangsPlusApi.getPlayersGang(player);
-
-                if (gang == null)
-                    return;
-
-                boolean isSameGang = gang.getAllMembers().stream().filter(Objects::nonNull).anyMatch(member -> member.getUniqueId().equals(uuid));
-
-                if (!isSameGang) {
-                    // TODO messages.yml
-                    plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
-                    return;
-                }
+            if (!isGangMember(player, uuid)) {
+                plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
+                return;
             }
         }
 
-        // close inventory if somehow they have another inventory opened
-        player.closeInventory();
+        Location loc = hopperBlock.getLocation();
+        openHoppers.put(player.getUniqueId(), loc);
 
-        plugin.getCacheManager().getOrCreate(hopperBlock.getLocation()).whenComplete((mainGUI, err) -> {
-            if (err != null)
+        plugin.getCacheManager().getOrCreate(loc).whenComplete((hopper, err) -> {
+            if (err != null) {
                 plugin.getLogger().warning("An error has occurred while making GUI: " + err.getMessage());
-            else
-                player.openInventory(mainGUI);
+                openHoppers.remove(player.getUniqueId());
+                return;
+            }
+
+            if (hopper != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> hopper.openMainMenu(player, plugin));
+            } else {
+                openHoppers.remove(player.getUniqueId());
+            }
         });
+    }
+
+    public void openWhitelist(Player player, ChunkHopper hopper) {
+        openHoppers.put(player.getUniqueId(), hopper.location());
+        hopper.openWhitelist(player, plugin);
+    }
+
+    public void openBlacklist(Player player, ChunkHopper hopper) {
+        openHoppers.put(player.getUniqueId(), hopper.location());
+        hopper.openBlacklist(player, plugin);
+    }
+
+    public Location getOpenHopperLocation(Player player) {
+        return openHoppers.get(player.getUniqueId());
+    }
+
+    public void removeOpenHopper(Player player) {
+        openHoppers.remove(player.getUniqueId());
+    }
+
+    private boolean isGangMember(Player player, UUID ownerUUID) {
+        if (!plugin.isGangsEnabled())
+            return false;
+
+        if (!GangsPlusApi.isInGang(player))
+            return false;
+
+        Gang gang = GangsPlusApi.getPlayersGang(player);
+        if (gang == null)
+            return false;
+
+        return gang.getAllMembers().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(member -> member.getUniqueId().equals(ownerUUID));
     }
 
     public UUID getOwnerUUID(Block block) {
@@ -86,34 +110,6 @@ public class GUIManager {
 
     public boolean isOwner(Player player, Block block) {
         return getOwnerUUID(block) != null && getOwnerUUID(block).equals(player.getUniqueId());
-    }
-
-    public boolean canFitItem(Inventory inventory, ItemStack item) {
-        if (item == null || item.getType() == Material.AIR)
-            return false;
-
-        int quantity = item.getAmount();
-
-        for (int slot = 0; slot < 36; slot++) {
-            ItemStack current = inventory.getItem(slot);
-
-            // if empty
-            if (current == null || current.getType() == Material.AIR)
-                return true;
-
-            if (current.isSimilar(item)) {
-                int space = current.getMaxStackSize() - current.getAmount();
-
-                if (space > 0) {
-                    quantity -= space;
-
-                    if (quantity <= 0)
-                        return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     public NamespacedKey getOwnerKey() {
