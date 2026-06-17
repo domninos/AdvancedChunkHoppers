@@ -90,7 +90,7 @@ hoppers_placed_limits:
   knight: 5 # group.knight
   lord: 10 # group.lord
 
-# Materials that are considered containers and can be pulled from
+# materials that are considered containers and can be pulled from
 container_materials:
   - CHEST
   - TRAPPED_CHEST

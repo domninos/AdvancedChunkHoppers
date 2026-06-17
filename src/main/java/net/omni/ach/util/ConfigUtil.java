@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +151,7 @@ public class ConfigUtil {
         }
 
         List<String> matStrings = plugin.getConfig().getStringList("container_materials");
-        if (matStrings == null || matStrings.isEmpty()) {
+        if (matStrings.isEmpty()) {
             matStrings = List.of(
                     "CHEST", "TRAPPED_CHEST", "BARREL", "HOPPER", "SHULKER_BOX",
                     "WHITE_SHULKER_BOX", "ORANGE_SHULKER_BOX", "MAGENTA_SHULKER_BOX",
@@ -159,17 +160,19 @@ public class ConfigUtil {
                     "CYAN_SHULKER_BOX", "PURPLE_SHULKER_BOX", "BLUE_SHULKER_BOX",
                     "BROWN_SHULKER_BOX", "GREEN_SHULKER_BOX", "RED_SHULKER_BOX", "BLACK_SHULKER_BOX"
             );
+
             plugin.getConfig().set("container_materials", matStrings);
+            savedDefaults.getAndIncrement();
         }
-        
+
         this.container_materials = new ArrayList<>();
         for (String s : matStrings) {
             Material m = Material.matchMaterial(s.toUpperCase());
-            if (m != null) {
+
+            if (m != null)
                 this.container_materials.add(m);
-            } else {
+            else
                 plugin.sendConsole("<red>Invalid container material in config: " + s + "</red>");
-            }
         }
 
         ConfigurationSection limitsSection = plugin.getConfig().getConfigurationSection("limits");
@@ -379,5 +382,6 @@ public class ConfigUtil {
     public void flush() {
         limitsMap.clear();
         hoppersPlacedLimitsMap.clear();
+        container_materials.clear();
     }
 }
