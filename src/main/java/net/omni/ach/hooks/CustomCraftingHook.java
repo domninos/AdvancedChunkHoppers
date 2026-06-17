@@ -12,12 +12,7 @@ public class CustomCraftingHook {
     private boolean enabled = false;
 
     public void init() {
-        try {
-            Class.forName("me.wolfyscript.customcrafting.CustomCrafting");
-            this.enabled = true;
-        } catch (ClassNotFoundException e) {
-            this.enabled = false;
-        }
+        this.enabled = true;
     }
 
     public boolean isCustomChunkHopper(ItemStack item) {

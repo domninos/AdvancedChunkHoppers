@@ -5,9 +5,9 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.omni.ach.db.DatabaseManager;
 import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
+import net.omni.ach.hooks.RoseStackerHook;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
-import net.omni.ach.hooks.RoseStackerHook;
 import net.omni.ach.managers.CacheManager;
 import net.omni.ach.managers.ChunkHopperManager;
 import net.omni.ach.managers.FilterManager;
@@ -19,22 +19,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AdvancedChunkHoppers extends JavaPlugin {
-
-    /*
-    TODO:
-        - support RoseStackers
-        - use ItemPreStackEvent
-        - use ItemSpawnEvent fallback
-        -
-        - support PDC for player ownership
-        - use SQLITE for inventories
-        -
-        - implement auto save to database
-        - check for block changes / block destruction
-        -
-        - When the Chunk Hopper Gets full it should pull all the drops to above it and let them stack there and then once its empty should resume normal function
-        -
-     */
 
     private RoseStackerHook roseStackerHook;
     private GangsPlusHook gangsPlusHook;

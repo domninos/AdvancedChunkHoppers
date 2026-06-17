@@ -249,6 +249,7 @@ public class ChunkHopper {
 
         Player owner = Bukkit.getPlayer(ownerUUID);
         if (owner != null && owner.isOnline()) {
+            // TODO messages.yml
             plugin.sendMessage(owner,
                     "<red>Your ChunkHopper at <yellow><x>, <y>, <z></yellow> is full!</red>",
                     Placeholder.parsed("x", String.valueOf(location.getBlockX())),
@@ -292,8 +293,10 @@ public class ChunkHopper {
                                 .map(MessageUtil::parse).toArray(Component[]::new)));
 
         int itemSlots = size - 9;
+
         for (int i = 0; i < Math.min(itemSlots, filterSource.getSize() - 9); i++) {
             ItemStack it = filterSource.getItem(i);
+
             if (it != null && it.getType() != Material.AIR)
                 gui.setItem(i, it.clone());
         }
@@ -313,17 +316,19 @@ public class ChunkHopper {
 
     public void applyWhitelistChanges(Inventory view) {
         int limit = Math.min(view.getSize() - 9, whitelistInventory.getSize() - 9);
-        for (int i = 0; i < limit; i++) {
+
+        for (int i = 0; i < limit; i++)
             whitelistInventory.setItem(i, view.getItem(i));
-        }
-        for (int i = limit; i < whitelistInventory.getSize() - 9; i++) {
+
+        for (int i = limit; i < whitelistInventory.getSize() - 9; i++)
             whitelistInventory.setItem(i, null);
-        }
+
         this.dirty = true;
     }
 
     public void applyBlacklistChanges(Inventory view) {
         int limit = Math.min(view.getSize() - 9, blacklistInventory.getSize() - 9);
+
         for (int i = 0; i < limit; i++)
             blacklistInventory.setItem(i, view.getItem(i));
 
