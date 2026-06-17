@@ -68,7 +68,7 @@ public class ACHCommand implements CommandExecutor {
 
         // header
         helpBuilder.append("\n<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>\n");
-        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>ACH</bold></gradient> <gray>• (");
+        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>•n");
 
         if (sender.hasPermission("ach.use")) {
             helpBuilder.append(MessageUtil.formatString("ach", "Base command for AdvancedChunkHoppers.", "ach"));
@@ -81,15 +81,15 @@ public class ACHCommand implements CommandExecutor {
         }
 
         // footer
-        helpBuilder.append("<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>");
+        helpBuilder.append("<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>");
 
         sender.sendMessage(MessageUtil.parse(helpBuilder.toString()));
     }
 
     private @NonNull String getAboutText() {
-        String pluginName = plugin.getPluginMeta().getName();
-        String version = plugin.getPluginMeta().getVersion();
-        String author = plugin.getPluginMeta().getAuthors().getFirst();
+        String pluginName = plugin.getDescription().getName();
+        String version = plugin.getDescription().getVersion();
+        String author = plugin.getDescription().getAuthors().getFirst();
         String githubUrl = "https://github.com/domninos/AdvancedChunkHoppers";
         String discordUrl = "https://discord.gg/7CuCtDHmQ3";
 
