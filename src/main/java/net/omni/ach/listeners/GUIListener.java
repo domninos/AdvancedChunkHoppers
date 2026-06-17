@@ -166,17 +166,12 @@ public class GUIListener implements Listener {
             int size = type == InventoryType.WHITELIST
                     ? plugin.getConfigUtil().getWhitelistInventorySize()
                     : plugin.getConfigUtil().getBlacklistInventorySize();
-            int bottomStart = size - 9;
 
-            boolean touchesButtons = event.getRawSlots().stream()
-                    .anyMatch(slot -> slot >= 0 && slot < size && slot >= bottomStart);
+            boolean touchesTop = event.getRawSlots().stream()
+                    .anyMatch(slot -> slot >= 0 && slot < size);
 
-            if (touchesButtons) {
+            if (touchesTop)
                 event.setCancelled(true);
-                return;
-            }
-
-            hopper.markDirty();
         } else {
             hopper.markDirty();
         }
