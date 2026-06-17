@@ -7,6 +7,7 @@ import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -26,10 +27,12 @@ public class ChunkHopper {
     private final Inventory blacklistInventory;
     private long lastFullWarning = 0;
     private boolean dirty = false;
+    private int containerLimit;
 
     public ChunkHopper(Location location, UUID ownerUUID, AdvancedChunkHoppers plugin) {
         this.location = location;
         this.ownerUUID = ownerUUID;
+        this.containerLimit = plugin.getChunkHopperManager().readContainerLimitSync(location.getBlock());
 
         int mainSize = plugin.getConfigUtil().getHopperSize();
         int whitelistSize = plugin.getConfigUtil().getWhitelistInventorySize();
@@ -131,6 +134,14 @@ public class ChunkHopper {
         return blacklistInventory;
     }
 
+    public int getContainerLimit() {
+        return containerLimit;
+    }
+
+    public void setContainerLimit(int containerLimit) {
+        this.containerLimit = containerLimit;
+    }
+
     public void markDirty() {
         this.dirty = true;
     }
@@ -139,11 +150,20 @@ public class ChunkHopper {
         return dirty;
     }
 
-    public boolean canFitItem(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR)
+    public boolean canFitItem(Item itemEntity, AdvancedChunkHoppers plugin) {
+        if (itemEntity == null)
+            return false;
+
+        ItemStack item = itemEntity.getItemStack();
+
+        if (item.getType() == Material.AIR)
             return false;
 
         int quantity = item.getAmount();
+
+        if (plugin.getRoseStackerHook().isEnabled())
+            quantity = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
+
         int itemSlots = mainInventory.getSize() - 9;
 
         for (int slot = 0; slot < itemSlots; slot++) {
@@ -197,8 +217,10 @@ public class ChunkHopper {
 
     private boolean isInFilter(Inventory filter, ItemStack item) {
         int itemSlots = filter.getSize() - 9;
+
         for (int i = 0; i < itemSlots; i++) {
             ItemStack filterItem = filter.getItem(i);
+
             if (filterItem != null && filterItem.isSimilar(item))
                 return true;
         }
@@ -224,11 +246,14 @@ public class ChunkHopper {
 
     private List<ItemStack> extractItems(Inventory inv, int limit) {
         List<ItemStack> result = new ArrayList<>();
+
         for (int i = 0; i < Math.min(limit, inv.getSize()); i++) {
             ItemStack it = inv.getItem(i);
+
             if (it != null && it.getType() != Material.AIR)
                 result.add(it);
         }
+
         return result;
     }
 
