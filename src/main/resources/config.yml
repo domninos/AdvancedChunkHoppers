@@ -81,11 +81,11 @@ puller:
 # luckperms-based max chests placed underneath the hopper
 # you may add other ranks and limits here as well
 limits:
-  knight: 2 # lp.group.knight
-  lord: 4 # lp.group.lord
+  knight: 2 # group.knight
+  lord: 4 # group.lord
 
 # luckperms-based max chunk hoppers a player can place
 # -1 means unlimited (default for players with no matching group)
 hoppers_placed_limits:
-  knight: 5 # lp.group.knight
-  lord: 10 # lp.group.lord
+  knight: 5 # group.knight
+  lord: 10 # group.lord
