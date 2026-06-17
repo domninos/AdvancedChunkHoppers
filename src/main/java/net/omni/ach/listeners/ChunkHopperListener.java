@@ -35,6 +35,7 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onItemSpawnSpawnInChunk(ItemSpawnEvent event) {
+        Item itemEntity = event.getEntity();
         Location location = event.getLocation();
         Chunk chunk = location.getChunk();
 
@@ -45,7 +46,6 @@ public class ChunkHopperListener implements Listener {
         if (hopper == null)
             return;
 
-        Item itemEntity = event.getEntity();
         ItemStack drop = itemEntity.getItemStack();
 
         int realAmount;
@@ -54,7 +54,6 @@ public class ChunkHopperListener implements Listener {
         else
             realAmount = drop.getAmount();
 
-
         if (realAmount != drop.getAmount()) {
             drop = drop.clone();
             drop.setAmount(realAmount);
@@ -62,17 +61,6 @@ public class ChunkHopperListener implements Listener {
 
         if (!hopper.shouldCollect(drop))
             return;
-
-        if (!hopper.canFitItem(drop)) {
-            event.setCancelled(true);
-
-            Location above = hopper.getLocation().clone().add(0, 1, 0);
-
-            plugin.getRoseStackerHook().dropStackedItem(drop, above);
-
-            hopper.notifyFull(plugin);
-            return;
-        }
 
         Block hopperBlock = hopper.getLocation().getBlock();
         Container bottom = plugin.getChunkHopperManager()
@@ -88,6 +76,14 @@ public class ChunkHopperListener implements Listener {
             }
 
             drop = leftovers.get(0);
+        }
+
+        if (!hopper.canFitItem(drop)) {
+            event.setCancelled(true);
+            Location above = hopper.getLocation().clone().add(0, 1, 0);
+            itemEntity.teleport(above);
+            hopper.notifyFull(plugin);
+            return;
         }
 
         Inventory mainInv = hopper.getMainInventory();
@@ -110,7 +106,14 @@ public class ChunkHopperListener implements Listener {
 
         Player player = event.getPlayer();
 
-        // check if there is a hopper in chunk
+        Block against = event.getBlockAgainst();
+
+        if (block.getY() - against.getY() != 1) {
+            event.setCancelled(true);
+            // TODO messages.yml
+            plugin.sendMessage(player, "<red>Chunk Hopper must be placed facing down.</red>");
+            return;
+        }
 
         if (plugin.getChunkHopperManager().hasHopper(block.getChunk())) {
             event.setCancelled(true);
@@ -162,6 +165,7 @@ public class ChunkHopperListener implements Listener {
 
         if (!plugin.getGuiManager().isOwner(player, block)) {
             event.setCancelled(true);
+            // TODO messages.yml
             plugin.sendMessage(player, "<red>You do not have permission to break this.</red>");
             return;
         }
@@ -176,7 +180,7 @@ public class ChunkHopperListener implements Listener {
                 ItemStack item = hopper.getMainInventory().getItem(i);
 
                 if (item != null && item.getType() != Material.AIR) {
-                    plugin.getRoseStackerHook().dropStackedItem(item, dropLoc);
+                    block.getWorld().dropItemNaturally(dropLoc, item);
                     hopper.getMainInventory().clear(i);
                 }
             }

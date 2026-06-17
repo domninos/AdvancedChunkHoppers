@@ -111,7 +111,9 @@ public class GUIListener implements Listener {
                         plugin.sendMessage(player, "<red>Filter is full!</red>");
                     }
                 }
+                return;
             }
+            event.setCancelled(false);
             return;
         }
 

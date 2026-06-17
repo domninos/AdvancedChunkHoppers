@@ -82,9 +82,6 @@ public class ChunkHopperManager {
             if (!hopper.shouldCollect(drop))
                 continue;
 
-            if (!hopper.canFitItem(drop))
-                continue;
-
             Block hopperBlock = hopperLoc.getBlock();
             Container bottom = getBottomContainer(hopperBlock, hopper.getOwnerUUID());
 
@@ -99,6 +96,9 @@ public class ChunkHopperManager {
 
                 remaining = leftovers.get(0);
             }
+
+            if (!hopper.canFitItem(remaining))
+                continue;
 
             Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
 
@@ -254,8 +254,6 @@ public class ChunkHopperManager {
             return false;
 
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
-
-        System.out.println(pdc.getKeys());
 
         return pdc.has(ach_key);
     }
