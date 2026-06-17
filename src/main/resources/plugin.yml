@@ -6,7 +6,7 @@ main: net.omni.ach.AdvancedChunkHoppers
 api-version: '1.13'
 load: POSTWORLD
 
-softdepend: [ GangsPlus, RoseStacker, CustomCrafting ]
+softdepend: [ GangsPlus, RoseStacker, CustomCrafting, LuckPerms ]
 
 authors: [ domninos ]
 

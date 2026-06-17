@@ -6,6 +6,7 @@ import net.omni.ach.commands.ACHCommand;
 import net.omni.ach.db.DatabaseManager;
 import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
+import net.omni.ach.hooks.LuckPermsHook;
 import net.omni.ach.hooks.RoseStackerHook;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
@@ -25,6 +26,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     private RoseStackerHook roseStackerHook;
     private GangsPlusHook gangsPlusHook;
     private CustomCraftingHook customCraftingHook;
+    private LuckPermsHook luckPermsHook;
 
     private ChunkHopperManager chunkHopperManager;
 
@@ -45,6 +47,8 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
         configUtil.flush();
         messagesManager.flush();
+
+        luckPermsHook.unregister();
 
         // close pool after all saves are done
         databaseManager.closePool();
@@ -88,6 +92,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     private void registerHooks() {
         this.roseStackerHook = new RoseStackerHook();
         this.gangsPlusHook = new GangsPlusHook();
+        this.customCraftingHook = new CustomCraftingHook();
 
         if (Bukkit.getPluginManager().isPluginEnabled("GangsPlus")) {
             this.gangsPlusHook.init();
@@ -99,11 +104,14 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
             sendConsole("<green>Successfully hooked into RoseStacker!</green>");
         }
 
-        this.customCraftingHook = new CustomCraftingHook();
-
         if (Bukkit.getPluginManager().isPluginEnabled("CustomCrafting")) {
             this.customCraftingHook.init();
             sendConsole("<green>Successfully hooked into CustomCrafting!</green>");
+        }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("LuckPerms")) {
+            this.luckPermsHook = new LuckPermsHook(this);
+            sendConsole("<green>Successfully hooked into LuckPerms!</green>");
         }
     }
 
