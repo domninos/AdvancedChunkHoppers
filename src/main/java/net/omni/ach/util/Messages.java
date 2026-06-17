@@ -15,8 +15,8 @@ public enum Messages {
     HOPPER_FACE_DOWN("hopper_face_down", "<red>Chunk Hopper must be placed facing down.</red>"),
     ONE_PER_CHUNK("one_per_chunk", "<red>You can only place 1 <gold><b>Chunk Hopper</b></gold> in 1 chunk.</red>"),
     MAX_HOPPERS_REACHED("max_hoppers_reached", "<red>You have reached the maximum number of Chunk Hoppers.</red>"),
-    HOPPERS_LEFT("hoppers_left", "<white>You have %remaining%(x) chunk hoppers left.</white>"),
-    HOPPERS_NOW("hoppers_now", "<white>You now have %count%(x) chunk hoppers left.</white>"),
+    HOPPERS_LEFT("hoppers_left", "<white>You have %remaining%/%max% chunk hoppers remaining.</white>"),
+    HOPPERS_NOW("hoppers_now", "<white>You now have %count%(x) chunk hoppers.</white>"),
 
     NO_BREAK_PERMS("no_break_perms", "<red>You do not have permission to break this.</red>"),
     NO_OPEN_PERMS("no_open_perms", "<red>You do not have permission to open this hopper.</red>"),
