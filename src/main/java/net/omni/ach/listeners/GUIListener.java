@@ -101,6 +101,11 @@ public class GUIListener implements Listener {
             if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
                 ItemStack moved = event.getCurrentItem();
                 if (moved != null && moved.getType() != Material.AIR) {
+                    if (hopper.isInOtherFilter(type, moved)) {
+                        event.setCurrentItem(null);
+                        plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
+                        return;
+                    }
                     Inventory top = view.getTopInventory();
                     int emptySlot = findEmptySlot(top, size - 9);
                     if (emptySlot != -1) {
@@ -121,6 +126,11 @@ public class GUIListener implements Listener {
         ItemStack cursor = event.getCursor();
 
         if (cursor.getType() != Material.AIR) {
+            if (hopper.isInOtherFilter(type, cursor)) {
+                event.setCancelled(true);
+                plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
+                return;
+            }
             ItemStack clone = cursor.clone();
             clone.setAmount(1);
             event.setCurrentItem(clone);

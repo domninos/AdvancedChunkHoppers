@@ -205,6 +205,11 @@ public class ChunkHopper {
         return false;
     }
 
+    public boolean isInOtherFilter(InventoryType type, ItemStack item) {
+        Inventory other = type == InventoryType.WHITELIST ? blacklistInventory : whitelistInventory;
+        return isInFilter(other, item);
+    }
+
     public void save(AdvancedChunkHoppers plugin) {
         if (!dirty)
             return;
