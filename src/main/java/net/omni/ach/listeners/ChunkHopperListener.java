@@ -3,6 +3,7 @@ package net.omni.ach.listeners;
 import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import net.omni.ach.chunkhopper.ChunkHopperHolder;
+import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -116,15 +117,13 @@ public class ChunkHopperListener implements Listener {
 
         if (block.getY() - against.getY() != 1) {
             event.setCancelled(true);
-            // TODO messages.yml
-            plugin.sendMessage(player, "<red>Chunk Hopper must be placed facing down.</red>");
+            plugin.sendMessage(player, Messages.HOPPER_FACE_DOWN.toString());
             return;
         }
 
         if (plugin.getChunkHopperManager().hasHopper(block.getChunk())) {
             event.setCancelled(true);
-            // TODO messages.yml
-            plugin.sendMessage(player, "<red>You can only place 1 <gold><b>Chunk Hopper</b></gold> in 1 chunk.</red>");
+            plugin.sendMessage(player, Messages.ONE_PER_CHUNK.toString());
             return;
         }
 
@@ -135,8 +134,7 @@ public class ChunkHopperListener implements Listener {
 
             if (current >= maxHoppers) {
                 event.setCancelled(true);
-                // TODO messages.yml
-                plugin.sendMessage(player, "<red>You have reached the maximum number of Chunk Hoppers.</red>");
+                plugin.sendMessage(player, Messages.MAX_HOPPERS_REACHED.toString());
                 return;
             }
         }
@@ -172,8 +170,7 @@ public class ChunkHopperListener implements Listener {
         if (max != -1) {
             int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
 
-            // TODO messages.yml
-            plugin.sendMessage(player, "<white>You have " + (max - currentCount) + "(x) chunk hoppers left.</white>");
+            plugin.sendMessage(player, Messages.HOPPERS_LEFT.replace("remaining", String.valueOf(max - currentCount)));
         }
     }
 
@@ -188,8 +185,7 @@ public class ChunkHopperListener implements Listener {
 
         if (!plugin.getGuiManager().isOwner(player, block)) {
             event.setCancelled(true);
-            // TODO messages.yml
-            plugin.sendMessage(player, "<red>You do not have permission to break this.</red>");
+            plugin.sendMessage(player, Messages.NO_BREAK_PERMS.toString());
             return;
         }
 
@@ -240,8 +236,7 @@ public class ChunkHopperListener implements Listener {
         if (max != -1) {
             int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
 
-            // TODO messages.yml
-            plugin.sendMessage(player, "<white>You now have " + currentCount + "(x) chunk hoppers left.</white>");
+            plugin.sendMessage(player, Messages.HOPPERS_NOW.replace("count", String.valueOf(currentCount)));
         }
     }
 

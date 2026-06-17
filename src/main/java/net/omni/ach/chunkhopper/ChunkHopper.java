@@ -1,9 +1,9 @@
 package net.omni.ach.chunkhopper;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.util.MessageUtil;
+import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -249,12 +249,10 @@ public class ChunkHopper {
 
         Player owner = Bukkit.getPlayer(ownerUUID);
         if (owner != null && owner.isOnline()) {
-            // TODO messages.yml
-            plugin.sendMessage(owner,
-                    "<red>Your ChunkHopper at <yellow><x>, <y>, <z></yellow> is full!</red>",
-                    Placeholder.parsed("x", String.valueOf(location.getBlockX())),
-                    Placeholder.parsed("y", String.valueOf(location.getBlockY())),
-                    Placeholder.parsed("z", String.valueOf(location.getBlockZ())));
+            plugin.sendMessage(owner, Messages.HOPPER_FULL.replace(
+                    "x", String.valueOf(location.getBlockX()),
+                    "y", String.valueOf(location.getBlockY()),
+                    "z", String.valueOf(location.getBlockZ())));
         }
     }
 

@@ -4,6 +4,7 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import net.omni.ach.chunkhopper.ChunkHopperHolder;
 import net.omni.ach.chunkhopper.InventoryType;
+import net.omni.ach.util.Messages;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -108,7 +109,7 @@ public class GUIListener implements Listener {
                         top.setItem(emptySlot, clone);
                         playAddSound(player, isWhitelist);
                     } else {
-                        plugin.sendMessage(player, "<red>Filter is full!</red>");
+                        plugin.sendMessage(player, Messages.FILTER_FULL.toString());
                     }
                 }
                 return;

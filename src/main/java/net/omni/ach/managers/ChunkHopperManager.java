@@ -28,7 +28,9 @@ public class ChunkHopperManager {
 
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
+    private final Map<UUID, Integer> hopperLimits = new HashMap<>();
     private final Map<UUID, Integer> hopperCounts = new HashMap<>();
+    private BukkitRunnable pullerTask;
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
@@ -45,7 +47,7 @@ public class ChunkHopperManager {
     private void startPullingTask() {
         int interval = plugin.getConfigUtil().getPullerIntervalTicks();
 
-        new BukkitRunnable() {
+        pullerTask = new BukkitRunnable() {
             @Override
             public void run() {
                 for (ChunkHopper hopper : chunkHoppers.values()) {
@@ -54,7 +56,16 @@ public class ChunkHopperManager {
                     collectFromAbove(hopper);
                 }
             }
-        }.runTaskTimer(plugin, interval, interval);
+        };
+
+        pullerTask.runTaskTimer(plugin, interval, interval);
+    }
+
+    public void reloadPullerTask() {
+        if (pullerTask != null)
+            pullerTask.cancel();
+
+        startPullingTask();
     }
 
     private void collectFromAbove(ChunkHopper hopper) {

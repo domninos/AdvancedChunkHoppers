@@ -3,6 +3,7 @@ package net.omni.ach.managers;
 import net.brcdev.gangs.GangsPlusApi;
 import net.brcdev.gangs.gang.Gang;
 import net.omni.ach.AdvancedChunkHoppers;
+import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -33,7 +34,7 @@ public class GUIManager {
             return;
 
         if (!isOwner(player, hopperBlock) && !isGangMember(player, uuid)) {
-            plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
+            plugin.sendMessage(player, Messages.NO_OPEN_PERMS.toString());
             return;
         }
 
