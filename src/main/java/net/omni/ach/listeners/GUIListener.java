@@ -65,11 +65,13 @@ public class GUIListener implements Listener {
                 player.closeInventory();
                 return;
             }
+
             if (hopper.isWhitelistSlot(slot, plugin)) {
                 if (plugin.getChunkHopperManager().isFilterViewer(hopper.getLocation(), player.getUniqueId())) {
                     plugin.sendMessage(player, Messages.FILTER_IN_USE.toString());
                     return;
                 }
+
                 player.closeInventory();
                 player.openInventory(hopper.buildWhitelistGUI(plugin));
                 plugin.getChunkHopperManager().setFilterViewer(hopper.getLocation(), player.getUniqueId());
@@ -78,6 +80,7 @@ public class GUIListener implements Listener {
                     plugin.sendMessage(player, Messages.FILTER_IN_USE.toString());
                     return;
                 }
+
                 player.closeInventory();
                 player.openInventory(hopper.buildBlacklistGUI(plugin));
                 plugin.getChunkHopperManager().setFilterViewer(hopper.getLocation(), player.getUniqueId());
@@ -118,28 +121,37 @@ public class GUIListener implements Listener {
                     event.setCancelled(true);
                     return;
                 }
+
                 ItemStack moved = event.getCurrentItem();
+
                 if (moved != null && moved.getType() != Material.AIR) {
                     if (hopper.isInOtherFilter(type, moved)) {
                         event.setCurrentItem(null);
                         plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
                         return;
                     }
+
                     Inventory top = view.getTopInventory();
                     int emptySlot = findEmptySlot(top, size - 9);
+
                     if (emptySlot != -1) {
                         ItemStack clone = moved.clone();
+
                         clone.setAmount(1);
                         top.setItem(emptySlot, clone);
                         playAddSound(player, isWhitelist);
+
                         if (isWhitelist)
                             plugin.getChunkHopperManager().collectNearbyItems(hopper);
-                    } else {
+
+                    } else
                         plugin.sendMessage(player, Messages.FILTER_FULL.toString());
-                    }
+
                 }
+
                 return;
             }
+
             event.setCancelled(false);
             return;
         }
@@ -151,22 +163,29 @@ public class GUIListener implements Listener {
                 event.setCancelled(false);
                 return;
             }
+
             if (hopper.isInOtherFilter(type, cursor)) {
                 event.setCancelled(true);
                 plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
                 return;
             }
+
             ItemStack clone = cursor.clone();
+
             clone.setAmount(1);
             event.setCurrentItem(clone);
             playAddSound(player, isWhitelist);
+
             if (isWhitelist)
                 plugin.getChunkHopperManager().collectNearbyItems(hopper);
+
             return;
         }
 
         event.setCancelled(true);
+
         ItemStack current = event.getCurrentItem();
+
         if (current != null && current.getType() != Material.AIR) {
             event.setCurrentItem(null);
             hopper.markDirty();
@@ -176,6 +195,7 @@ public class GUIListener implements Listener {
     private int findEmptySlot(Inventory inv, int limit) {
         for (int i = 0; i < limit; i++) {
             ItemStack it = inv.getItem(i);
+
             if (it == null || it.getType() == Material.AIR)
                 return i;
         }
@@ -230,6 +250,8 @@ public class GUIListener implements Listener {
 
         if (!(top.getHolder() instanceof ChunkHopperHolder(ChunkHopper hopper, InventoryType type)))
             return;
+
+        plugin.getChunkHopperManager().getActiveGuiLocations().remove(hopper.getLocation());
 
         switch (type) {
             case WHITELIST -> {
