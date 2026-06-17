@@ -28,8 +28,8 @@ public class ChunkHopperManager {
 
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
-    private final Map<UUID, Integer> hopperLimits = new HashMap<>();
     private final Map<UUID, Integer> hopperCounts = new HashMap<>();
+    private final Map<Location, UUID> filterViewers = new HashMap<>();
     private BukkitRunnable pullerTask;
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
@@ -61,19 +61,12 @@ public class ChunkHopperManager {
         pullerTask.runTaskTimer(plugin, interval, interval);
     }
 
-    public void reloadPullerTask() {
-        if (pullerTask != null)
-            pullerTask.cancel();
-
-        startPullingTask();
-    }
-
     private void collectFromAbove(ChunkHopper hopper) {
         Location hopperLoc = hopper.getLocation();
         if (hopperLoc.getWorld() == null) return;
 
         Location scanCenter = hopperLoc.clone().add(0.5, 1.5, 0.5);
-        for (Entity entity : hopperLoc.getWorld().getNearbyEntities(scanCenter, 0.5, 1.0, 0.5,
+        for (Entity entity : hopperLoc.getWorld().getNearbyEntities(scanCenter, 4, 4, 4,
                 e -> e instanceof Item it && it.isOnGround() && !it.isDead())) {
 
             Item item = (Item) entity;
@@ -173,6 +166,85 @@ public class ChunkHopperManager {
             return 1;
 
         return hopper.getPersistentDataContainer().getOrDefault(containerLimitKey, PersistentDataType.INTEGER, 1);
+    }
+
+    public boolean isFilterViewer(Location location, UUID viewerUUID) {
+        UUID current = filterViewers.get(location);
+        return current != null && !current.equals(viewerUUID);
+    }
+
+    public void setFilterViewer(Location location, UUID viewerUUID) {
+        filterViewers.put(location, viewerUUID);
+    }
+
+    public void removeFilterViewer(Location location, UUID viewerUUID) {
+        filterViewers.remove(location, viewerUUID);
+    }
+
+    public void reloadPullerTask() {
+        if (pullerTask != null)
+            pullerTask.cancel();
+
+        startPullingTask();
+    }
+
+    public void collectNearbyItems(ChunkHopper hopper) {
+        Location loc = hopper.getLocation();
+        if (loc.getWorld() == null) return;
+
+        Chunk chunk = loc.getChunk();
+
+        for (Entity entity : chunk.getEntities()) {
+            if (!(entity instanceof Item item)) continue;
+            if (item.isDead()) continue;
+
+            ItemStack drop = item.getItemStack();
+            if (!hopper.shouldCollect(drop)) continue;
+
+            int realAmount;
+            if (plugin.getRoseStackerHook().isEnabled())
+                realAmount = plugin.getRoseStackerHook().getStackedAmount(item);
+            else
+                realAmount = drop.getAmount();
+
+            if (realAmount != drop.getAmount()) {
+                drop = drop.clone();
+                drop.setAmount(realAmount);
+            }
+
+            Block hopperBlock = loc.getBlock();
+            Container bottom = getBottomContainer(hopperBlock, hopper.getOwnerUUID());
+            ItemStack remaining = drop;
+
+            if (bottom != null) {
+                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+                if (leftovers.isEmpty()) {
+                    item.remove();
+                    hopper.markDirty();
+                    continue;
+                }
+
+                remaining = leftovers.get(0);
+            }
+
+            if (!hopper.canFitItem(remaining)) {
+                item.teleport(loc.clone().add(0, 1, 0));
+                hopper.notifyFull(plugin);
+                continue;
+            }
+
+            Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
+
+            hopper.markDirty();
+
+            if (leftovers.isEmpty())
+                item.remove();
+            else {
+                item.setItemStack(leftovers.get(0));
+                hopper.notifyFull(plugin);
+            }
+        }
     }
 
     public void loadFromChunkAsync(Chunk chunk) {
@@ -336,5 +408,8 @@ public class ChunkHopperManager {
 
         hopperCounts.clear();
         chunkHoppers.clear();
+        
+        if (pullerTask != null)
+            pullerTask.cancel();
     }
 }

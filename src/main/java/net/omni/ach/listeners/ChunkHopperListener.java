@@ -4,7 +4,6 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import net.omni.ach.chunkhopper.ChunkHopperHolder;
 import net.omni.ach.util.Messages;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,6 +18,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -51,6 +51,13 @@ public class ChunkHopperListener implements Listener {
 
         ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
         if (hopper == null)
+            return;
+
+        Location hopperLoc = hopper.getLocation();
+        if (location.getWorld().equals(hopperLoc.getWorld()) &&
+                location.getBlockX() == hopperLoc.getBlockX() &&
+                location.getBlockY() == hopperLoc.getBlockY() + 1 &&
+                location.getBlockZ() == hopperLoc.getBlockZ())
             return;
 
         ItemStack drop = itemEntity.getItemStack();
@@ -86,8 +93,9 @@ public class ChunkHopperListener implements Listener {
         }
 
         if (!hopper.canFitItem(drop)) {
-            Location above = hopper.getLocation().clone().add(0, 1, 0);
-            itemEntity.teleport(above);
+            event.setCancelled(true);
+            Location above = hopperLoc.clone().add(0.5, 1.5, 0.5);
+            hopperLoc.getWorld().dropItem(above, drop);
             hopper.notifyFull(plugin);
             return;
         }
@@ -206,7 +214,10 @@ public class ChunkHopperListener implements Listener {
             }
 
             // close the inventories for all viewers
-            for (Player viewer : Bukkit.getOnlinePlayers()) {
+            for (Player viewer : block.getLocation().getNearbyPlayers(10)) {
+                if (viewer == null)
+                    continue;
+
                 Inventory top = viewer.getOpenInventory().getTopInventory();
 
                 if (top.getHolder() instanceof ChunkHopperHolder holder && holder.hopper().equals(hopper))
@@ -260,6 +271,21 @@ public class ChunkHopperListener implements Listener {
 
         plugin.getChunkHopperManager().unregisterHopper(chunk);
     }
+
+    // to prevent the normal hopper functionality
+    @EventHandler
+    public void onInventoryPickupItem(InventoryPickupItemEvent event) {
+        if (event.getInventory().getHolder(false) instanceof Hopper hopper
+                && plugin.getChunkHopperManager().isACH(hopper.getBlock()))
+            event.setCancelled(true);
+    }
+//
+//    @EventHandler
+//    public void onInventoryMoveItem(InventoryMoveItemEvent event) {
+//        if (event.getInitiator().getHolder(false) instanceof Hopper hopper
+//                && plugin.getChunkHopperManager().isACH(hopper.getBlock()))
+//            event.setCancelled(true);
+//    }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
