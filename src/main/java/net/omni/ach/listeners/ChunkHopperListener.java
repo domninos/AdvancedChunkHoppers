@@ -169,10 +169,11 @@ public class ChunkHopperListener implements Listener {
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
         plugin.getChunkHopperManager().addHopperCount(player.getUniqueId());
 
-
         if (maxHoppers != -1) {
+            int updatedCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
+
             plugin.sendMessage(player, Messages.HOPPERS_LEFT.replace(
-                    "remaining", String.valueOf(maxHoppers - current),
+                    "remaining", String.valueOf(maxHoppers - updatedCount),
                     "max", String.valueOf(maxHoppers)
             ));
         }
