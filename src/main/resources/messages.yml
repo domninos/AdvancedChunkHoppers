@@ -1,0 +1,19 @@
+no_perms: "<red>You do not have permission to use this command.</red>"
+only_players: "<red>Only players can use this command.</red>"
+
+usage: "<red>Invalid arguments. Usage: %usage%</red>"
+unknown_cmd: "<red>Unknown command.</red>"
+
+reloaded: "<green>config.yml and messages.yml have been reloaded.</green>"
+
+hopper_face_down: "<red>Chunk Hopper must be placed facing down.</red>"
+one_per_chunk: "<red>You can only place 1 <gold><b>Chunk Hopper</b></gold> in 1 chunk.</red>"
+max_hoppers_reached: "<red>You have reached the maximum number of Chunk Hoppers.</red>"
+hoppers_left: "<white>You have %remaining%(x) chunk hoppers left.</white>"
+hoppers_now: "<white>You now have %count%(x) chunk hoppers left.</white>"
+
+no_break_perms: "<red>You do not have permission to break this.</red>"
+no_open_perms: "<red>You do not have permission to open this hopper.</red>"
+
+hopper_full: "<red>Your ChunkHopper at <yellow>%x%, %y%, %z%</yellow> is full!</red>"
+filter_full: "<red>Filter is full!</red>"

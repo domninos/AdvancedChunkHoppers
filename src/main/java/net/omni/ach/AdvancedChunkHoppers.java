@@ -2,6 +2,7 @@ package net.omni.ach;
 
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.omni.ach.commands.ACHCommand;
 import net.omni.ach.db.DatabaseManager;
 import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
@@ -11,6 +12,8 @@ import net.omni.ach.listeners.GUIListener;
 import net.omni.ach.managers.CacheManager;
 import net.omni.ach.managers.ChunkHopperManager;
 import net.omni.ach.managers.GUIManager;
+import net.omni.ach.managers.MessagesManager;
+import net.omni.ach.util.ACHConfig;
 import net.omni.ach.util.ConfigUtil;
 import net.omni.ach.util.MessageUtil;
 import org.bukkit.Bukkit;
@@ -30,15 +33,18 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     private DatabaseManager databaseManager;
 
+    private MessagesManager messagesManager;
+    private ACHConfig messagesConfig;
+
     private ConfigUtil configUtil;
 
     @Override
     public void onDisable() {
         chunkHopperManager.flush();
-
         cacheManager.invalidateAll();
 
         configUtil.flush();
+        messagesManager.flush();
 
         // close pool after all saves are done
         databaseManager.closePool();
@@ -49,6 +55,10 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+
+        this.messagesConfig = new ACHConfig(this, "messages.yml");
+        this.messagesManager = new MessagesManager(this);
+        messagesManager.loadMessages();
 
         this.configUtil = new ConfigUtil(this);
         configUtil.load();
@@ -98,7 +108,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     }
 
     private void registerCommands() {
-
+        new ACHCommand(this).register();
     }
 
     private void registerListeners() {
@@ -152,5 +162,13 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     public CustomCraftingHook getCustomCraftingHook() {
         return customCraftingHook;
+    }
+
+    public ACHConfig getMessagesConfig() {
+        return messagesConfig;
+    }
+
+    public MessagesManager getMessagesManager() {
+        return messagesManager;
     }
 }
