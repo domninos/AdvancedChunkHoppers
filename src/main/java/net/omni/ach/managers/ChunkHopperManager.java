@@ -16,8 +16,12 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChunkHopperManager {
     private final NamespacedKey ach_key;
@@ -25,9 +29,9 @@ public class ChunkHopperManager {
     private final NamespacedKey ownerKey;
 
     private final AdvancedChunkHoppers plugin;
-    private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
-    private final Map<UUID, Integer> hopperCounts = new HashMap<>();
-    private final Map<Location, UUID> filterViewers = new HashMap<>();
+    private final Map<Long, ChunkHopper> chunkHoppers = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> hopperCounts = new ConcurrentHashMap<>();
+    private final Map<Location, UUID> filterViewers = new ConcurrentHashMap<>();
     private BukkitRunnable pullerTask;
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
@@ -49,7 +53,8 @@ public class ChunkHopperManager {
             @Override
             public void run() {
                 for (ChunkHopper hopper : chunkHoppers.values()) {
-                    if (hopper == null) continue;
+                    if (hopper == null)
+                        continue;
 
                     collectFromAbove(hopper);
                 }
@@ -403,7 +408,7 @@ public class ChunkHopperManager {
         int max = -1;
 
         for (Map.Entry<String, Integer> entry : plugin.getConfigUtil().getHoppersPlacedLimitsMap().entrySet()) {
-            if (player.hasPermission("lp.group." + entry.getKey())) {
+            if (player.hasPermission("group." + entry.getKey())) {
                 if (entry.getValue() > max)
                     max = entry.getValue();
             }

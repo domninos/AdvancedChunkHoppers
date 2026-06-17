@@ -131,10 +131,10 @@ public class ChunkHopperListener implements Listener {
             return;
         }
 
+        int current = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
         int maxHoppers = plugin.getChunkHopperManager().getMaxHoppers(player);
 
         if (maxHoppers != -1) {
-            int current = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
 
             if (current >= maxHoppers) {
                 event.setCancelled(true);
@@ -169,14 +169,11 @@ public class ChunkHopperListener implements Listener {
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
         plugin.getChunkHopperManager().addHopperCount(player.getUniqueId());
 
-        int max = plugin.getChunkHopperManager().getMaxHoppers(player);
 
-        if (max != -1) {
-            int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
-
+        if (maxHoppers != -1) {
             plugin.sendMessage(player, Messages.HOPPERS_LEFT.replace(
-                    "remaining", String.valueOf(max - currentCount),
-                    "max", String.valueOf(max)
+                    "remaining", String.valueOf(maxHoppers - current),
+                    "max", String.valueOf(maxHoppers)
             ));
         }
     }
@@ -245,6 +242,8 @@ public class ChunkHopperListener implements Listener {
 
         if (max != -1) {
             int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
+
+            if (currentCount < 0) currentCount = 0;
 
             plugin.sendMessage(player, Messages.HOPPERS_NOW.replace("count", String.valueOf(currentCount)));
         }
