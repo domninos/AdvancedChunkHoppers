@@ -68,7 +68,7 @@ public class ACHCommand implements CommandExecutor {
 
         // header
         helpBuilder.append("\n<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>\n");
-        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>•n");
+        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>\n");
 
         if (sender.hasPermission("ach.use")) {
             helpBuilder.append(MessageUtil.formatString("ach", "Base command for AdvancedChunkHoppers.", "ach"));
