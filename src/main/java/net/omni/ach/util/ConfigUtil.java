@@ -56,6 +56,8 @@ public class ConfigUtil {
 
     private int puller_interval_ticks;
 
+    private List<Material> container_materials;
+
     public ConfigUtil(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
     }
@@ -145,6 +147,29 @@ public class ConfigUtil {
         if (puller_interval_ticks < 1) {
             this.puller_interval_ticks = 1;
             plugin.getConfig().set("puller.interval_ticks", 1);
+        }
+
+        List<String> matStrings = plugin.getConfig().getStringList("container_materials");
+        if (matStrings == null || matStrings.isEmpty()) {
+            matStrings = List.of(
+                    "CHEST", "TRAPPED_CHEST", "BARREL", "HOPPER", "SHULKER_BOX",
+                    "WHITE_SHULKER_BOX", "ORANGE_SHULKER_BOX", "MAGENTA_SHULKER_BOX",
+                    "LIGHT_BLUE_SHULKER_BOX", "YELLOW_SHULKER_BOX", "LIME_SHULKER_BOX",
+                    "PINK_SHULKER_BOX", "GRAY_SHULKER_BOX", "LIGHT_GRAY_SHULKER_BOX",
+                    "CYAN_SHULKER_BOX", "PURPLE_SHULKER_BOX", "BLUE_SHULKER_BOX",
+                    "BROWN_SHULKER_BOX", "GREEN_SHULKER_BOX", "RED_SHULKER_BOX", "BLACK_SHULKER_BOX"
+            );
+            plugin.getConfig().set("container_materials", matStrings);
+        }
+        
+        this.container_materials = new ArrayList<>();
+        for (String s : matStrings) {
+            Material m = Material.matchMaterial(s.toUpperCase());
+            if (m != null) {
+                this.container_materials.add(m);
+            } else {
+                plugin.sendConsole("<red>Invalid container material in config: " + s + "</red>");
+            }
         }
 
         ConfigurationSection limitsSection = plugin.getConfig().getConfigurationSection("limits");
@@ -345,6 +370,10 @@ public class ConfigUtil {
 
     public int getPullerIntervalTicks() {
         return puller_interval_ticks;
+    }
+
+    public List<Material> getContainerMaterials() {
+        return container_materials;
     }
 
     public void flush() {
