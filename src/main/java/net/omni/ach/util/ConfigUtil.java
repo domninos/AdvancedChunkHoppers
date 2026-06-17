@@ -15,6 +15,7 @@ public class ConfigUtil {
 
     private final AdvancedChunkHoppers plugin;
     private final Map<String, Integer> limitsMap = new HashMap<>();
+    private final Map<String, Integer> hoppersPlacedLimitsMap = new HashMap<>();
 
     private int hopper_size = 0;
     private String hopper_title;
@@ -81,7 +82,7 @@ public class ConfigUtil {
 
         this.back_button_mat = getAndDefaultString("hopper.back_button.material", "BARRIER", savedDefaults::getAndAdd).toUpperCase();
         this.back_button_slot = getAndDefaultSlot("hopper.back_button.slot", 49, savedDefaults::getAndAdd);
-        this.back_button_display_name = getAndDefaultString("hopper.back_button.display_name", "<light_red><b>Exit</b></light_red>", savedDefaults::getAndAdd);
+        this.back_button_display_name = getAndDefaultString("hopper.back_button.display_name", "<#FF6B6B><b>Exit</b></#FF6B6B>", savedDefaults::getAndAdd);
         this.back_button_lore = plugin.getConfig().getStringList("hopper.back_button.lore");
 
         this.blacklist_mat = getAndDefaultString("hopper.blacklist.material", "BARRIER", savedDefaults::getAndAdd).toUpperCase();

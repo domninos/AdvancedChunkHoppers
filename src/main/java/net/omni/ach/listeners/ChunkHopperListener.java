@@ -2,6 +2,8 @@ package net.omni.ach.listeners;
 
 import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
+import net.omni.ach.chunkhopper.ChunkHopperHolder;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,6 +25,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class ChunkHopperListener implements Listener {
@@ -33,7 +37,7 @@ public class ChunkHopperListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onItemSpawnSpawnInChunk(ItemSpawnEvent event) {
         Item itemEntity = event.getEntity();
         Location location = event.getLocation();
@@ -48,6 +52,9 @@ public class ChunkHopperListener implements Listener {
 
         ItemStack drop = itemEntity.getItemStack();
 
+        if (!hopper.shouldCollect(drop))
+            return;
+
         int realAmount;
         if (plugin.getRoseStackerHook().isEnabled())
             realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
@@ -58,9 +65,6 @@ public class ChunkHopperListener implements Listener {
             drop = drop.clone();
             drop.setAmount(realAmount);
         }
-
-        if (!hopper.shouldCollect(drop))
-            return;
 
         Block hopperBlock = hopper.getLocation().getBlock();
         Container bottom = plugin.getChunkHopperManager()
@@ -171,27 +175,39 @@ public class ChunkHopperListener implements Listener {
         }
 
         ChunkHopper hopper = plugin.getCacheManager().getCachedHopper(block.getLocation());
+        Chunk chunk = block.getChunk();
 
         if (hopper != null) {
             int itemSlots = hopper.getMainInventory().getSize() - 9;
             Location dropLoc = block.getLocation().add(0.5, 0.5, 0.5);
 
+            List<ItemStack> items = new ArrayList<>();
             for (int i = 0; i < itemSlots; i++) {
                 ItemStack item = hopper.getMainInventory().getItem(i);
 
                 if (item != null && item.getType() != Material.AIR) {
-                    block.getWorld().dropItemNaturally(dropLoc, item);
+                    items.add(item.clone());
                     hopper.getMainInventory().clear(i);
                 }
             }
 
-            hopper.markDirty();
-            hopper.save(plugin);
-            plugin.getCacheManager().invalidate(block.getLocation());
-        }
+            for (Player viewer : Bukkit.getOnlinePlayers()) {
+                Inventory top = viewer.getOpenInventory().getTopInventory();
 
-        Chunk chunk = block.getChunk();
-        plugin.getChunkHopperManager().unregisterHopper(chunk);
+                if (top.getHolder() instanceof ChunkHopperHolder holder && holder.hopper().equals(hopper))
+                    viewer.closeInventory();
+            }
+
+            plugin.getChunkHopperManager().unregisterHopper(chunk);
+            plugin.getCacheManager().discard(block.getLocation());
+            plugin.getDatabaseManager().deleteLocation(block.getLocation());
+
+            for (ItemStack item : items)
+                block.getWorld().dropItemNaturally(dropLoc, item);
+
+            items.clear(); // garbage
+        } else
+            plugin.getChunkHopperManager().unregisterHopper(chunk);
     }
 
     @EventHandler

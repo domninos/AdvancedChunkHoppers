@@ -29,7 +29,7 @@ hopper:
   back_button:
     material: BARRIER
     slot: 49
-    display_name: "<light_red><b>Exit</b></light_red>"
+    display_name: "<#FF6B6B><b>Exit</b></#FF6B6B>"
     lore:
       - " <green>BACK BUTTON LORE<green> "
   blacklist:
@@ -83,3 +83,9 @@ puller:
 limits:
   knight: 2 # lp.group.knight
   lord: 4 # lp.group.lord
+
+# luckperms-based max chunk hoppers a player can place
+# -1 means unlimited (default for players with no matching group)
+hoppers_placed_limits:
+  knight: 5
+  lord: 10

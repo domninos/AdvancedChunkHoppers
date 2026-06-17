@@ -308,9 +308,8 @@ public class ChunkHopperManager {
     }
 
     public void flush() {
-        for (ChunkHopper hopper : chunkHoppers.values()) {
+        for (ChunkHopper hopper : chunkHoppers.values())
             hopper.saveSync(plugin);
-        }
 
         hopperLimits.clear();
         chunkHoppers.clear();

@@ -62,6 +62,10 @@ public class CacheManager {
         }
     }
 
+    public void discard(Location location) {
+        activeHopperCache.remove(location);
+    }
+
     public void invalidateAll() {
         for (ChunkHopper hopper : activeHopperCache.values()) {
             hopper.saveSync(plugin);

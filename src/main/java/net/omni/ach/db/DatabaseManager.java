@@ -218,6 +218,36 @@ public class DatabaseManager {
         });
     }
 
+    public void deleteLocation(Location location) {
+        String locationKey = getLocationKey(location);
+
+        if (locationKey.isBlank())
+            return;
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> executeDelete(locationKey));
+    }
+
+    public void deleteLocationSync(Location location) {
+        String locationKey = getLocationKey(location);
+
+        if (locationKey.isBlank())
+            return;
+
+        executeDelete(locationKey);
+    }
+
+    private void executeDelete(String locationKey) {
+        String query = "DELETE FROM chunk_hoppers WHERE location_key = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, locationKey);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while deleting from database!", e);
+        }
+    }
+
     public void closePool() {
         if (dataSource != null && !dataSource.isClosed())
             dataSource.close();

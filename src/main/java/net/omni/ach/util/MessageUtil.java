@@ -12,7 +12,7 @@ public class MessageUtil {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Component PREFIX =
             MiniMessage.miniMessage().deserialize(
-                    "<gray>[</gray><gradient:#00AAFF:#55FFFF>AdvancedChunkHoppers</gradient><gray>]</gray> "
+                    "<gray>[</gray><gradient:#00AAFF:#55FFFF>ACH</gradient><gray>]</gray> "
             );
 
     private MessageUtil() {

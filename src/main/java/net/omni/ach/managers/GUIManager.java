@@ -32,11 +32,9 @@ public class GUIManager {
         if (uuid == null)
             return;
 
-        if (!isOwner(player, hopperBlock)) {
-            if (!isGangMember(player, uuid)) {
-                plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
-                return;
-            }
+        if (!isOwner(player, hopperBlock) && !isGangMember(player, uuid)) {
+            plugin.sendMessage(player, "<red>You do not have permission to open this hopper.</red>");
+            return;
         }
 
         plugin.getCacheManager().getOrCreate(hopperBlock.getLocation()).whenComplete((hopper, err) -> {

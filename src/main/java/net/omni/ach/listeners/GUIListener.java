@@ -159,11 +159,11 @@ public class GUIListener implements Listener {
             return;
 
         Inventory top = event.getView().getTopInventory();
-        if (!(top.getHolder() instanceof ChunkHopperHolder holder))
+        if (!(top.getHolder() instanceof ChunkHopperHolder(ChunkHopper hopper, InventoryType type)))
             return;
 
-        if (holder.type() != InventoryType.MAIN) {
-            int size = holder.type() == InventoryType.WHITELIST
+        if (type != InventoryType.MAIN) {
+            int size = type == InventoryType.WHITELIST
                     ? plugin.getConfigUtil().getWhitelistInventorySize()
                     : plugin.getConfigUtil().getBlacklistInventorySize();
             int bottomStart = size - 9;
@@ -176,9 +176,9 @@ public class GUIListener implements Listener {
                 return;
             }
 
-            holder.hopper().markDirty();
+            hopper.markDirty();
         } else {
-            holder.hopper().markDirty();
+            hopper.markDirty();
         }
     }
 
