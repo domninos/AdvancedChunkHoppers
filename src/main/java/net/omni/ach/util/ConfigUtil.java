@@ -60,6 +60,25 @@ public class ConfigUtil {
         this.plugin = plugin;
     }
 
+    public boolean reloadConfig() {
+        int oldHopperSize = hopper_size;
+        String oldHopperTitle = hopper_title;
+        int oldWhitelistSize = whitelist_inventory_size;
+        String oldWhitelistTitle = whitelist_inventory_title;
+        int oldBlacklistSize = blacklist_inventory_size;
+        String oldBlacklistTitle = blacklist_inventory_title;
+
+        plugin.reloadConfig();
+        load();
+
+        return hopper_size != oldHopperSize
+                || !hopper_title.equals(oldHopperTitle)
+                || whitelist_inventory_size != oldWhitelistSize
+                || !whitelist_inventory_title.equals(oldWhitelistTitle)
+                || blacklist_inventory_size != oldBlacklistSize
+                || !blacklist_inventory_title.equals(oldBlacklistTitle);
+    }
+
     public void load() {
         AtomicInteger savedDefaults = new AtomicInteger();
 
