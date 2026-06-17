@@ -87,5 +87,5 @@ limits:
 # luckperms-based max chunk hoppers a player can place
 # -1 means unlimited (default for players with no matching group)
 hoppers_placed_limits:
-  knight: 5
-  lord: 10
+  knight: 5 # lp.group.knight
+  lord: 10 # lp.group.lord

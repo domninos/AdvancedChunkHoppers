@@ -10,7 +10,6 @@ import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
 import net.omni.ach.managers.CacheManager;
 import net.omni.ach.managers.ChunkHopperManager;
-import net.omni.ach.managers.FilterManager;
 import net.omni.ach.managers.GUIManager;
 import net.omni.ach.util.ConfigUtil;
 import net.omni.ach.util.MessageUtil;
@@ -24,7 +23,6 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     private GangsPlusHook gangsPlusHook;
     private CustomCraftingHook customCraftingHook;
 
-    private FilterManager filterManager;
     private ChunkHopperManager chunkHopperManager;
 
     private CacheManager cacheManager;
@@ -60,8 +58,6 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
         this.cacheManager = new CacheManager(this);
         this.guiManager = new GUIManager(this);
-
-        this.filterManager = new FilterManager();
 
         this.chunkHopperManager = new ChunkHopperManager(this);
         chunkHopperManager.init();
@@ -136,10 +132,6 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     public CacheManager getCacheManager() {
         return cacheManager;
-    }
-
-    public FilterManager getFilterManager() {
-        return filterManager;
     }
 
     public ChunkHopperManager getChunkHopperManager() {
