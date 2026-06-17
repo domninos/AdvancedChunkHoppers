@@ -28,7 +28,6 @@ public class ChunkHopperManager {
 
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
-    private final Map<UUID, Integer> hopperLimits = new HashMap<>();
     private final Map<UUID, Integer> hopperCounts = new HashMap<>();
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
@@ -114,7 +113,6 @@ public class ChunkHopperManager {
         }
     }
 
-    // TODO should get the permission for lp.groups
     @Nullable
     public Container getBottomContainer(Block hopper, UUID ownerUUID) {
         int limit = getContainerLimit(hopper, ownerUUID);
@@ -283,23 +281,6 @@ public class ChunkHopperManager {
         chunkHoppers.remove(chunk.getChunkKey());
     }
 
-    public int getHopperLimit(Player player) {
-        if (player.hasPermission("ach.limit.none"))
-            return -1;
-
-        if (hopperLimits.containsKey(player.getUniqueId()))
-            return hopperLimits.get(player.getUniqueId());
-
-        for (int i = 100; i > 0; i--) {
-            if (player.hasPermission("ach.limit." + i)) {
-                hopperLimits.put(player.getUniqueId(), i);
-                return i;
-            }
-        }
-
-        return 5;
-    }
-
     public int getMaxHoppers(Player player) {
         int max = -1;
 
@@ -327,7 +308,7 @@ public class ChunkHopperManager {
     }
 
     public int getHopperCount(UUID ownerUUID) {
-        return hopperCounts.getOrDefault(ownerUUID, 0);
+        return hopperCounts.getOrDefault(ownerUUID, -1);
     }
 
     public NamespacedKey getAchKey() {
@@ -342,7 +323,6 @@ public class ChunkHopperManager {
         for (ChunkHopper hopper : chunkHoppers.values())
             hopper.saveSync(plugin);
 
-        hopperLimits.clear();
         hopperCounts.clear();
         chunkHoppers.clear();
     }

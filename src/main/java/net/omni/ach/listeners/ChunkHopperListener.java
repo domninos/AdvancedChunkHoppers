@@ -135,6 +135,7 @@ public class ChunkHopperListener implements Listener {
 
             if (current >= maxHoppers) {
                 event.setCancelled(true);
+                // TODO messages.yml
                 plugin.sendMessage(player, "<red>You have reached the maximum number of Chunk Hoppers.</red>");
                 return;
             }
@@ -165,6 +166,15 @@ public class ChunkHopperListener implements Listener {
         plugin.getChunkHopperManager().registerHopper(chunk, hopperObj);
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
         plugin.getChunkHopperManager().addHopperCount(player.getUniqueId());
+
+        int max = plugin.getChunkHopperManager().getMaxHoppers(player);
+
+        if (max != -1) {
+            int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
+
+            // TODO messages.yml
+            plugin.sendMessage(player, "<white>You have " + (max - currentCount) + "(x) chunk hoppers left.</white>");
+        }
     }
 
     @EventHandler
@@ -200,6 +210,7 @@ public class ChunkHopperListener implements Listener {
                 }
             }
 
+            // close the inventories for all viewers
             for (Player viewer : Bukkit.getOnlinePlayers()) {
                 Inventory top = viewer.getOpenInventory().getTopInventory();
 
@@ -222,6 +233,15 @@ public class ChunkHopperListener implements Listener {
             UUID ownerUUID = plugin.getGuiManager().getOwnerUUID(block);
             if (ownerUUID != null)
                 plugin.getChunkHopperManager().removeHopperCount(ownerUUID);
+        }
+
+        int max = plugin.getChunkHopperManager().getMaxHoppers(player);
+
+        if (max != -1) {
+            int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
+
+            // TODO messages.yml
+            plugin.sendMessage(player, "<white>You now have " + currentCount + "(x) chunk hoppers left.</white>");
         }
     }
 
