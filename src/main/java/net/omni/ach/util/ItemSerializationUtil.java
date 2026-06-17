@@ -40,6 +40,18 @@ public class ItemSerializationUtil {
         }
     }
 
+    private static String paperToBase64(List<ItemStack> items) {
+        byte[] bytes = ItemStack.serializeItemsAsBytes(items.toArray(new ItemStack[0]));
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    private static String spigotToBase64(List<ItemStack> items) {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("items", items);
+        String yaml = config.saveToString();
+        return Base64.getEncoder().encodeToString(yaml.getBytes(StandardCharsets.UTF_8));
+    }
+
     public static List<ItemStack> fromBase64(String base64) {
         if (base64 == null || base64.isBlank())
             return List.of();
@@ -55,43 +67,33 @@ public class ItemSerializationUtil {
         }
     }
 
-    private static String paperToBase64(List<ItemStack> items) {
-        byte[] bytes = ItemStack.serializeItemsAsBytes(items.toArray(new ItemStack[0]));
-        return Base64.getEncoder().encodeToString(bytes);
-    }
-
     private static List<ItemStack> paperFromBase64(String base64) {
         byte[] bytes = Base64.getDecoder().decode(base64);
         return List.of(ItemStack.deserializeItemsFromBytes(bytes));
     }
 
-    private static String spigotToBase64(List<ItemStack> items) {
-        YamlConfiguration config = new YamlConfiguration();
-        config.set("items", items);
-        String yaml = config.saveToString();
-        return Base64.getEncoder().encodeToString(yaml.getBytes(StandardCharsets.UTF_8));
-    }
-
     private static List<ItemStack> spigotFromBase64(String base64) {
         byte[] data = Base64.getDecoder().decode(base64);
         YamlConfiguration config = new YamlConfiguration();
+
         try {
             config.loadFromString(new String(data, StandardCharsets.UTF_8));
         } catch (InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
+
         List<?> raw = config.getList("items");
+
         if (raw == null)
             return List.of();
+
         List<ItemStack> items = new ArrayList<>();
+
         for (Object obj : raw) {
             if (obj instanceof ItemStack item)
                 items.add(item);
         }
-        return items;
-    }
 
-    public static boolean isPaper() {
-        return PAPER;
+        return items;
     }
 }

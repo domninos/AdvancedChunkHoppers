@@ -2,16 +2,17 @@ package net.omni.ach.managers;
 
 import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
-import net.omni.ach.util.MessageUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -21,7 +22,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkHopperManager {
-    private static final NamespacedKey ACH_KEY = new NamespacedKey("customcrafting", "utilities/chunk_hopper");
+    private final NamespacedKey ach_key;
+    private final NamespacedKey containerLimitKey;
+    private final NamespacedKey ownerKey;
 
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
@@ -29,10 +32,137 @@ public class ChunkHopperManager {
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
+
+        this.ach_key = new NamespacedKey("customcrafting", "utilities/chunk_hopper");
+        this.containerLimitKey = new NamespacedKey(plugin, "chunk_hopper_container_limit");
+        this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
     }
 
     public void init() {
-        // TODO load from db on startup
+        startPullingTask();
+    }
+
+    private void startPullingTask() {
+        int interval = plugin.getConfigUtil().getPullerIntervalTicks();
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (ChunkHopper hopper : chunkHoppers.values()) {
+                    if (hopper == null) continue;
+
+                    collectFromAbove(hopper);
+                }
+            }
+        }.runTaskTimer(plugin, interval, interval);
+    }
+
+    private void collectFromAbove(ChunkHopper hopper) {
+        Location hopperLoc = hopper.getLocation();
+        if (hopperLoc.getWorld() == null) return;
+
+        Location scanCenter = hopperLoc.clone().add(0.5, 1.5, 0.5);
+        for (Entity entity : hopperLoc.getWorld().getNearbyEntities(scanCenter, 0.5, 1.0, 0.5,
+                e -> e instanceof Item it && it.isOnGround() && !it.isDead())) {
+
+            Item item = (Item) entity;
+            ItemStack drop = item.getItemStack();
+
+            int realAmount;
+            if (plugin.getRoseStackerHook().isEnabled())
+                realAmount = plugin.getRoseStackerHook().getStackedAmount(item);
+            else
+                realAmount = drop.getAmount();
+
+            if (realAmount != drop.getAmount()) {
+                drop = drop.clone();
+                drop.setAmount(realAmount);
+            }
+
+            if (!hopper.shouldCollect(drop))
+                continue;
+
+            if (!hopper.canFitItem(drop))
+                continue;
+
+            Block hopperBlock = hopperLoc.getBlock();
+            Container bottom = getBottomContainer(hopperBlock, hopper.getOwnerUUID());
+
+            ItemStack remaining = drop;
+            if (bottom != null) {
+                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+                if (leftovers.isEmpty()) {
+                    item.remove();
+                    continue;
+                }
+
+                remaining = leftovers.get(0);
+            }
+
+            Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
+
+            if (leftovers.isEmpty())
+                item.remove();
+            else {
+                item.setItemStack(leftovers.get(0));
+                hopper.notifyFull(plugin);
+            }
+
+            hopper.markDirty();
+        }
+    }
+
+    // TODO should get the permission for lp.groups
+    @Nullable
+    public Container getBottomContainer(Block hopper, UUID ownerUUID) {
+        int limit = getContainerLimit(hopper, ownerUUID);
+        Block current = hopper.getRelative(0, -1, 0);
+        Container deepest = null;
+        int scanned = 0;
+
+        while (current.getState() instanceof Container container && scanned < limit) {
+            deepest = container;
+            current = current.getRelative(0, -1, 0);
+            scanned++;
+        }
+
+        return deepest;
+    }
+
+    public int getContainerLimit(Block hopperBlock, UUID ownerUUID) {
+        Player owner = Bukkit.getPlayer(ownerUUID);
+
+        if (owner != null && owner.isOnline()) {
+            int maxLimit = 0;
+
+            for (Map.Entry<String, Integer> entry : plugin.getConfigUtil().getLimitsMap().entrySet()) {
+                if (owner.hasPermission("lp.group." + entry.getKey())) {
+                    if (entry.getValue() > maxLimit)
+                        maxLimit = entry.getValue();
+                }
+            }
+
+            int limit = Math.max(maxLimit, 1);
+            storeContainerLimit(hopperBlock, limit);
+            return limit;
+        }
+
+        return readContainerLimit(hopperBlock);
+    }
+
+    private void storeContainerLimit(Block hopperBlock, int limit) {
+        if (!(hopperBlock.getState() instanceof Hopper hopper))
+            return;
+        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, limit);
+        hopper.update();
+    }
+
+    private int readContainerLimit(Block hopperBlock) {
+        if (!(hopperBlock.getState() instanceof Hopper hopper))
+            return 1;
+
+        return hopper.getPersistentDataContainer().getOrDefault(containerLimitKey, PersistentDataType.INTEGER, 1);
     }
 
     public void loadFromChunkAsync(Chunk chunk) {
@@ -64,9 +194,6 @@ public class ChunkHopperManager {
 
     @Nullable
     private Location findHopperInChunk(Chunk chunk) {
-        int minX = chunk.getX() << 4;
-        int minZ = chunk.getZ() << 4;
-
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 for (int y = chunk.getWorld().getMinHeight(); y < chunk.getWorld().getMaxHeight(); y++) {
@@ -82,45 +209,38 @@ public class ChunkHopperManager {
     }
 
     public CompletableFuture<ChunkHopper> load(Location location) {
-        int mainSize = plugin.getConfigUtil().getHopperSize();
-        int whitelistSize = plugin.getConfigUtil().getWhitelistInventorySize();
-        int blacklistSize = plugin.getConfigUtil().getBlacklistInventorySize();
-
         Block block = location.getBlock();
 
         if (!(block.getState() instanceof Hopper hopper))
             return CompletableFuture.completedFuture(null);
 
-        String ownerStr = hopper.getPersistentDataContainer().get(plugin.getGuiManager().getOwnerKey(), PersistentDataType.STRING);
+        String ownerStr = hopper.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
 
         if (ownerStr == null)
             return CompletableFuture.completedFuture(null);
 
         UUID ownerUUID = UUID.fromString(ownerStr);
 
-        Inventory mainInv = Bukkit.createInventory(null, mainSize,
-                MessageUtil.parse(plugin.getConfigUtil().getHopperTitle()));
-        Inventory whitelistInv = Bukkit.createInventory(null, whitelistSize,
-                MessageUtil.parse(plugin.getConfigUtil().getWhitelistInventoryTitle()));
-        Inventory blacklistInv = Bukkit.createInventory(null, blacklistSize,
-                MessageUtil.parse(plugin.getConfigUtil().getBlacklistInventoryTitle()));
+        ChunkHopper hopperObj = new ChunkHopper(location, ownerUUID, plugin);
 
         CompletableFuture<ChunkHopper> future = new CompletableFuture<>();
 
-        CompletableFuture.allOf(
-                plugin.getDatabaseManager().fetchItems(location)
-                        .thenAccept(items -> fillInventory(mainInv, items, 36)),
-                plugin.getDatabaseManager().fetchWhitelist(location)
-                        .thenAccept(items -> fillInventory(whitelistInv, items, whitelistSize)),
-                plugin.getDatabaseManager().fetchBlacklist(location)
-                        .thenAccept(items -> fillInventory(blacklistInv, items, blacklistSize))
-        ).thenRun(() -> {
-            ChunkHopper hopperObj = new ChunkHopper(location, ownerUUID, mainInv, whitelistInv, blacklistInv);
-            future.complete(hopperObj);
-        }).exceptionally(throwable -> {
-            future.completeExceptionally(throwable);
-            return null;
-        });
+        CompletableFuture<List<ItemStack>> itemsFuture = plugin.getDatabaseManager().fetchItems(location);
+        CompletableFuture<List<ItemStack>> whitelistFuture = plugin.getDatabaseManager().fetchWhitelist(location);
+        CompletableFuture<List<ItemStack>> blacklistFuture = plugin.getDatabaseManager().fetchBlacklist(location);
+
+        CompletableFuture.allOf(itemsFuture, whitelistFuture, blacklistFuture)
+                .thenAccept(ignored -> {
+                    hopperObj.loadItems(
+                            itemsFuture.join(),
+                            whitelistFuture.join(),
+                            blacklistFuture.join());
+                    future.complete(hopperObj);
+                })
+                .exceptionally(throwable -> {
+                    future.completeExceptionally(throwable);
+                    return null;
+                });
 
         return future;
     }
@@ -134,15 +254,10 @@ public class ChunkHopperManager {
             return false;
 
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
-        return pdc.has(ACH_KEY);
-    }
 
-    private void fillInventory(Inventory inv, List<ItemStack> items, int limit) {
-        for (int i = 0; i < Math.min(items.size(), limit); i++) {
-            ItemStack it = items.get(i);
-            if (it != null && it.getType() != Material.AIR)
-                inv.setItem(i, it);
-        }
+        System.out.println(pdc.getKeys());
+
+        return pdc.has(ach_key);
     }
 
     @Nullable
@@ -157,7 +272,7 @@ public class ChunkHopperManager {
             return null;
         }
 
-        if (!(chunk.getWorld().getBlockAt(hopper.location()).getState() instanceof Hopper)) {
+        if (!(chunk.getWorld().getBlockAt(hopper.getLocation()).getState() instanceof Hopper)) {
             unregisterHopper(chunk);
             return null;
         }
@@ -186,21 +301,13 @@ public class ChunkHopperManager {
         return 5;
     }
 
-    public Container getBottomContainer(Block hopper) {
-        Block blockBelow = hopper.getRelative(0, -1, 0);
-        Container lowest = null;
-
-        while (blockBelow.getState() instanceof Container container) {
-            lowest = container;
-            blockBelow = blockBelow.getRelative(0, -1, 0);
-        }
-
-        return lowest;
+    public NamespacedKey getOwnerKey() {
+        return this.ownerKey;
     }
 
     public void flush() {
         for (ChunkHopper hopper : chunkHoppers.values()) {
-            hopper.save(plugin);
+            hopper.saveSync(plugin);
         }
 
         hopperLimits.clear();

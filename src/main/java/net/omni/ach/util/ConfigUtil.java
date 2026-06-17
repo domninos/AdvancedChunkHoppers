@@ -53,6 +53,8 @@ public class ConfigUtil {
     private float blacklist_add_sound_volume;
     private float blacklist_add_sound_pitch;
 
+    private int puller_interval_ticks;
+
     public ConfigUtil(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
     }
@@ -109,6 +111,22 @@ public class ConfigUtil {
         this.blacklist_inventory_back_slot = getAndDefaultSlot("blacklist_inventory.back_button_slot",
                 22, savedDefaults::getAndAdd);
 
+        this.whitelist_add_sound = getAndDefaultString("whitelist_inventory.add_sound",
+                "ENTITY_ITEM_PICKUP", savedDefaults::getAndAdd);
+        this.whitelist_add_sound_volume = (float) plugin.getConfig().getDouble("whitelist_inventory.add_sound_volume", 0.5);
+        this.whitelist_add_sound_pitch = (float) plugin.getConfig().getDouble("whitelist_inventory.add_sound_pitch", 1.0);
+
+        this.blacklist_add_sound = getAndDefaultString("blacklist_inventory.add_sound",
+                "ENTITY_ITEM_PICKUP", savedDefaults::getAndAdd);
+        this.blacklist_add_sound_volume = (float) plugin.getConfig().getDouble("blacklist_inventory.add_sound_volume", 0.5);
+        this.blacklist_add_sound_pitch = (float) plugin.getConfig().getDouble("blacklist_inventory.add_sound_pitch", 1.0);
+
+        this.puller_interval_ticks = plugin.getConfig().getInt("puller.interval_ticks", 10);
+        if (puller_interval_ticks < 1) {
+            this.puller_interval_ticks = 1;
+            plugin.getConfig().set("puller.interval_ticks", 1);
+        }
+
         ConfigurationSection limitsSection = plugin.getConfig().getConfigurationSection("limits");
 
         if (limitsSection != null) {
@@ -138,10 +156,10 @@ public class ConfigUtil {
     }
 
     private int getAndDefaultSlot(String path, int defaultVal, IntConsumer consumer) {
-        int temp = plugin.getConfig().getInt("hopper." + path);
+        int temp = plugin.getConfig().getInt(path);
 
-        if (!plugin.getConfig().contains("hopper." + path) || temp == 0) {
-            plugin.getConfig().set("hopper." + path, defaultVal);
+        if (!plugin.getConfig().contains(path) || temp == 0) {
+            plugin.getConfig().set(path, defaultVal);
             consumer.accept(1);
             return defaultVal;
         }
@@ -251,6 +269,42 @@ public class ConfigUtil {
 
     public int getBlacklistInventoryBackSlot() {
         return blacklist_inventory_back_slot;
+    }
+
+    public Sound getWhitelistAddSound() {
+        try {
+            return Sound.valueOf(whitelist_add_sound);
+        } catch (IllegalArgumentException e) {
+            return Sound.ENTITY_ITEM_PICKUP;
+        }
+    }
+
+    public float getWhitelistAddSoundVolume() {
+        return whitelist_add_sound_volume;
+    }
+
+    public float getWhitelistAddSoundPitch() {
+        return whitelist_add_sound_pitch;
+    }
+
+    public Sound getBlacklistAddSound() {
+        try {
+            return Sound.valueOf(blacklist_add_sound);
+        } catch (IllegalArgumentException e) {
+            return Sound.ENTITY_ITEM_PICKUP;
+        }
+    }
+
+    public float getBlacklistAddSoundVolume() {
+        return blacklist_add_sound_volume;
+    }
+
+    public float getBlacklistAddSoundPitch() {
+        return blacklist_add_sound_pitch;
+    }
+
+    public int getPullerIntervalTicks() {
+        return puller_interval_ticks;
     }
 
     public void flush() {

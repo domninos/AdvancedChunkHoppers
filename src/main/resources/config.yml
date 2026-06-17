@@ -50,6 +50,11 @@ whitelist_inventory:
   # where the back button should appear
   back_button_slot: 22
 
+  # sound played when adding an item to the whitelist
+  # must be a valid Bukkit Sound enum: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+  add_sound: ENTITY_ITEM_PICKUP
+  add_sound_volume: 0.5
+  add_sound_pitch: 1.0
 
 blacklist_inventory:
   # the size of the inventory
@@ -61,6 +66,17 @@ blacklist_inventory:
 
   # where the back button should appear
   back_button_slot: 22
+
+  # sound played when adding an item to the blacklist
+  # must be a valid Bukkit Sound enum: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+  add_sound: ENTITY_ITEM_PICKUP
+  add_sound_volume: 0.5
+  add_sound_pitch: 1.0
+
+# how often the hopper checks for dropped items above it (in ticks, 20 = 1 second)
+# lower = more responsive (items get pulled faster), higher = less cpu usage
+puller:
+  interval_ticks: 10
 
 # luckperms-based max chests placed underneath the hopper
 # you may add other ranks and limits here as well

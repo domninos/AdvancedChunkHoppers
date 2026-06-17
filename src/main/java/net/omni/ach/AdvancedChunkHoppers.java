@@ -3,8 +3,10 @@ package net.omni.ach;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.omni.ach.db.DatabaseManager;
+import net.omni.ach.hooks.GangsPlusHook;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
+import net.omni.ach.hooks.RoseStackerHook;
 import net.omni.ach.managers.CacheManager;
 import net.omni.ach.managers.ChunkHopperManager;
 import net.omni.ach.managers.FilterManager;
@@ -31,15 +33,10 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         -
         - When the Chunk Hopper Gets full it should pull all the drops to above it and let them stack there and then once its empty should resume normal function
         -
-        - When you break the hopper if it has items in it they should just pop out just like if you broke a chest.
-        -
-        - For whitelist and blacklist players should drag and drop an item into the inventory it makes an audible que and the item appears in the menu.
-        -
-        - The chunk hopper should act as some sort of over flow chest for when it gets full
-             and if it is full should message the player when a drop is unable to be picked up that way players know if that is the case.
      */
 
-    private boolean gangsEnabled, roseStackerEnabled = false;
+    private RoseStackerHook roseStackerHook;
+    private GangsPlusHook gangsPlusHook;
 
     private FilterManager filterManager;
     private ChunkHopperManager chunkHopperManager;
@@ -53,16 +50,14 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
-        // before flushing everything, save and close the pool
-        databaseManager.closePool();
-
-        filterManager.flush();
         chunkHopperManager.flush();
 
         cacheManager.invalidateAll();
 
         configUtil.flush();
+
+        // close pool after all saves are done
+        databaseManager.closePool();
 
         sendConsole("<red>Successfully disabled.</red>");
     }
@@ -81,7 +76,6 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         this.guiManager = new GUIManager(this);
 
         this.filterManager = new FilterManager();
-        filterManager.init();
 
         this.chunkHopperManager = new ChunkHopperManager(this);
         chunkHopperManager.init();
@@ -99,18 +93,18 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         );
     }
 
-    // TODO
     private void registerHooks() {
-        // check if GangsPlus is enabled
+        this.roseStackerHook = new RoseStackerHook();
+        this.gangsPlusHook = new GangsPlusHook();
+
         if (Bukkit.getPluginManager().isPluginEnabled("GangsPlus")) {
-            gangsEnabled = true;
-            sendConsole("<green>GangsPlus is available!</green>");
+            this.gangsPlusHook.init();
+            sendConsole("<green>Successfully hooked into Gangs+!</green>");
         }
 
-        // check if RoseStacker is enabled, if not, default to ChunkHopperListener
         if (Bukkit.getPluginManager().isPluginEnabled("RoseStacker")) {
-            roseStackerEnabled = true;
-            sendConsole("<green>RoseStacker is available!</green>");
+            this.roseStackerHook.init();
+            sendConsole("<green>Successfully hooked into RoseStacker!</green>");
         }
     }
 
@@ -163,11 +157,11 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         return configUtil;
     }
 
-    public boolean isGangsEnabled() {
-        return gangsEnabled;
+    public RoseStackerHook getRoseStackerHook() {
+        return roseStackerHook;
     }
 
-    public boolean isRoseStackerEnabled() {
-        return roseStackerEnabled;
+    public GangsPlusHook getGangsPlusHook() {
+        return gangsPlusHook;
     }
 }

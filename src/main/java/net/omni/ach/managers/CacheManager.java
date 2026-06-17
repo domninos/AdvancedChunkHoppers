@@ -64,7 +64,7 @@ public class CacheManager {
 
     public void invalidateAll() {
         for (ChunkHopper hopper : activeHopperCache.values()) {
-            hopper.save(plugin);
+            hopper.saveSync(plugin);
         }
         activeHopperCache.clear();
     }
