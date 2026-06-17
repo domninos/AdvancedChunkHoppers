@@ -21,6 +21,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Map;
+
 public class GUIListener implements Listener {
     private final AdvancedChunkHoppers plugin;
 
@@ -64,11 +66,21 @@ public class GUIListener implements Listener {
                 return;
             }
             if (hopper.isWhitelistSlot(slot, plugin)) {
+                if (plugin.getChunkHopperManager().isFilterViewer(hopper.getLocation(), player.getUniqueId())) {
+                    plugin.sendMessage(player, Messages.FILTER_IN_USE.toString());
+                    return;
+                }
                 player.closeInventory();
                 player.openInventory(hopper.buildWhitelistGUI(plugin));
+                plugin.getChunkHopperManager().setFilterViewer(hopper.getLocation(), player.getUniqueId());
             } else if (hopper.isBlacklistSlot(slot, plugin)) {
+                if (plugin.getChunkHopperManager().isFilterViewer(hopper.getLocation(), player.getUniqueId())) {
+                    plugin.sendMessage(player, Messages.FILTER_IN_USE.toString());
+                    return;
+                }
                 player.closeInventory();
                 player.openInventory(hopper.buildBlacklistGUI(plugin));
+                plugin.getChunkHopperManager().setFilterViewer(hopper.getLocation(), player.getUniqueId());
             }
             return;
         }
@@ -99,6 +111,13 @@ public class GUIListener implements Listener {
 
         if (!isTop) {
             if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                ItemStack cursor = event.getCursor();
+                if (cursor.getType() != Material.AIR) {
+                    Map<Integer, ItemStack> left = player.getInventory().addItem(cursor);
+                    event.setCursor(left.isEmpty() ? null : left.get(0));
+                    event.setCancelled(true);
+                    return;
+                }
                 ItemStack moved = event.getCurrentItem();
                 if (moved != null && moved.getType() != Material.AIR) {
                     if (hopper.isInOtherFilter(type, moved)) {
@@ -113,6 +132,8 @@ public class GUIListener implements Listener {
                         clone.setAmount(1);
                         top.setItem(emptySlot, clone);
                         playAddSound(player, isWhitelist);
+                        if (isWhitelist)
+                            plugin.getChunkHopperManager().collectNearbyItems(hopper);
                     } else {
                         plugin.sendMessage(player, Messages.FILTER_FULL.toString());
                     }
@@ -126,6 +147,10 @@ public class GUIListener implements Listener {
         ItemStack cursor = event.getCursor();
 
         if (cursor.getType() != Material.AIR) {
+            if (slot < 0) {
+                event.setCancelled(false);
+                return;
+            }
             if (hopper.isInOtherFilter(type, cursor)) {
                 event.setCancelled(true);
                 plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
@@ -135,10 +160,17 @@ public class GUIListener implements Listener {
             clone.setAmount(1);
             event.setCurrentItem(clone);
             playAddSound(player, isWhitelist);
+            if (isWhitelist)
+                plugin.getChunkHopperManager().collectNearbyItems(hopper);
             return;
         }
 
-        event.setCancelled(false);
+        event.setCancelled(true);
+        ItemStack current = event.getCurrentItem();
+        if (current != null && current.getType() != Material.AIR) {
+            event.setCurrentItem(null);
+            hopper.markDirty();
+        }
     }
 
     private int findEmptySlot(Inventory inv, int limit) {
@@ -190,7 +222,7 @@ public class GUIListener implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player))
+        if (!(event.getPlayer() instanceof Player player))
             return;
 
         InventoryView view = event.getView();
@@ -200,8 +232,14 @@ public class GUIListener implements Listener {
             return;
 
         switch (type) {
-            case WHITELIST -> hopper.applyWhitelistChanges(top);
-            case BLACKLIST -> hopper.applyBlacklistChanges(top);
+            case WHITELIST -> {
+                hopper.applyWhitelistChanges(top);
+                plugin.getChunkHopperManager().removeFilterViewer(hopper.getLocation(), player.getUniqueId());
+            }
+            case BLACKLIST -> {
+                hopper.applyBlacklistChanges(top);
+                plugin.getChunkHopperManager().removeFilterViewer(hopper.getLocation(), player.getUniqueId());
+            }
             case MAIN -> {
             }
         }

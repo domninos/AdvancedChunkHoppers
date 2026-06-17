@@ -23,7 +23,8 @@ public enum Messages {
 
     HOPPER_FULL("hopper_full", "<red>Your ChunkHopper at <yellow>%x%, %y%, %z%</yellow> is full!</red>"),
     FILTER_FULL("filter_full", "<red>Filter is full!</red>"),
-    FILTER_CONFLICT("filter_conflict", "<red>That item is already in the other filter.</red>");
+    FILTER_CONFLICT("filter_conflict", "<red>That item is already in the other filter.</red>"),
+    FILTER_IN_USE("filter_in_use", "<red>Someone else is already viewing this filter menu.</red>");
 
     private final String path;
     private final Object defaultVal;
