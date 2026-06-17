@@ -20,6 +20,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Map;
@@ -104,7 +105,7 @@ public class ChunkHopperListener implements Listener {
     public void onHopperPlace(BlockPlaceEvent event) {
         Block block = event.getBlockPlaced();
 
-        if (!plugin.getChunkHopperManager().isACH(block))
+        if (!plugin.getCustomCraftingHook().isCustomChunkHopper(event.getItemInHand()))
             return;
 
         Player player = event.getPlayer();
@@ -126,10 +127,18 @@ public class ChunkHopperListener implements Listener {
 
         Hopper hopper = (Hopper) block.getState();
 
-        hopper.getPersistentDataContainer().set(
+        PersistentDataContainer pdc = hopper.getPersistentDataContainer();
+
+        pdc.set(
                 plugin.getChunkHopperManager().getOwnerKey(),
                 PersistentDataType.STRING,
                 player.getUniqueId().toString()
+        );
+
+        pdc.set(
+                plugin.getChunkHopperManager().getAchKey(),
+                PersistentDataType.STRING,
+                "true"
         );
 
         hopper.update();

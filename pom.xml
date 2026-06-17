@@ -107,5 +107,25 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>me.wolfyscript</groupId>
+            <artifactId>wolfyutils</artifactId>
+            <version>4.19.1.2</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.wolfyscript</groupId>
+                    <artifactId>jackson-dataformat-hocon</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>me.wolfyscript</groupId>
+            <artifactId>customcrafting</artifactId>
+            <version>4.19.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 </project>

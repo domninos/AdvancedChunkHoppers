@@ -3,6 +3,7 @@ package net.omni.ach;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.omni.ach.db.DatabaseManager;
+import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
@@ -37,6 +38,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     private RoseStackerHook roseStackerHook;
     private GangsPlusHook gangsPlusHook;
+    private CustomCraftingHook customCraftingHook;
 
     private FilterManager filterManager;
     private ChunkHopperManager chunkHopperManager;
@@ -106,6 +108,13 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
             this.roseStackerHook.init();
             sendConsole("<green>Successfully hooked into RoseStacker!</green>");
         }
+
+        this.customCraftingHook = new CustomCraftingHook();
+
+        if (Bukkit.getPluginManager().isPluginEnabled("CustomCrafting")) {
+            this.customCraftingHook.init();
+            sendConsole("<green>Successfully hooked into CustomCrafting!</green>");
+        }
     }
 
     private void registerCommands() {
@@ -163,5 +172,9 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     public GangsPlusHook getGangsPlusHook() {
         return gangsPlusHook;
+    }
+
+    public CustomCraftingHook getCustomCraftingHook() {
+        return customCraftingHook;
     }
 }

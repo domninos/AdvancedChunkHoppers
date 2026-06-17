@@ -21,7 +21,7 @@ hopper:
     display_name: " "
 
   whitelist:
-    material: LIGHT_GREEN_STAINED_GLASS_PANE
+    material: LIME_STAINED_GLASS_PANE
     slot: 47
     display_name: "<dark_green>Whitelist</dark_green>"
     lore:

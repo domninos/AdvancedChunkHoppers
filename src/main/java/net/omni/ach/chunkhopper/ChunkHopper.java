@@ -217,6 +217,16 @@ public class ChunkHopper {
         dirty = false;
     }
 
+    private List<ItemStack> extractItems(Inventory inv, int limit) {
+        List<ItemStack> result = new ArrayList<>();
+        for (int i = 0; i < Math.min(limit, inv.getSize()); i++) {
+            ItemStack it = inv.getItem(i);
+            if (it != null && it.getType() != Material.AIR)
+                result.add(it);
+        }
+        return result;
+    }
+
     public void saveSync(AdvancedChunkHoppers plugin) {
         if (!dirty)
             return;
@@ -227,16 +237,6 @@ public class ChunkHopper {
 
         plugin.getDatabaseManager().saveFullSync(location, ownerUUID.toString(), items, whitelist, blacklist);
         dirty = false;
-    }
-
-    private List<ItemStack> extractItems(Inventory inv, int limit) {
-        List<ItemStack> result = new ArrayList<>();
-        for (int i = 0; i < Math.min(limit, inv.getSize()); i++) {
-            ItemStack it = inv.getItem(i);
-            if (it != null && it.getType() != Material.AIR)
-                result.add(it);
-        }
-        return result;
     }
 
     public void notifyFull(AdvancedChunkHoppers plugin) {

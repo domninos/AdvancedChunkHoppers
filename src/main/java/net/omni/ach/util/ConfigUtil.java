@@ -71,10 +71,10 @@ public class ConfigUtil {
 
         this.hopper_title = getAndDefaultString("hopper.title", "<green>%player%'s ChunkHopper</green>", savedDefaults::getAndAdd);
 
-        this.filler_mat = getAndDefaultString("hopper.filler.mat", "GRAY_STAINED_GLASS_PANE", savedDefaults::getAndAdd);
+        this.filler_mat = getAndDefaultString("hopper.filler.material", "GRAY_STAINED_GLASS_PANE", savedDefaults::getAndAdd);
         this.filler_display_name = getAndDefaultString("hopper.filler.display_name", " ", savedDefaults::getAndAdd);
 
-        this.whitelist_mat = getAndDefaultString("hopper.whitelist.material", "LIGHT_GREEN_STAINED_GLASS_PANE", savedDefaults::getAndAdd).toUpperCase();
+        this.whitelist_mat = getAndDefaultString("hopper.whitelist.material", "LIME_STAINED_GLASS_PANE", savedDefaults::getAndAdd).toUpperCase();
         this.whitelist_slot = getAndDefaultSlot("hopper.whitelist.slot", 47, savedDefaults::getAndAdd);
         this.whitelist_display_name = getAndDefaultString("hopper.whitelist.display_name", "<dark_green>Whitelist</dark_green>", savedDefaults::getAndAdd);
         this.whitelist_lore = plugin.getConfig().getStringList("hopper.whitelist.lore");

@@ -33,7 +33,7 @@ public class ChunkHopperManager {
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
 
-        this.ach_key = new NamespacedKey("customcrafting", "utilities/chunk_hopper");
+        this.ach_key = new NamespacedKey(plugin, "chunk_hopper");
         this.containerLimitKey = new NamespacedKey(plugin, "chunk_hopper_container_limit");
         this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
     }
@@ -299,6 +299,10 @@ public class ChunkHopperManager {
         }
 
         return 5;
+    }
+
+    public NamespacedKey getAchKey() {
+        return this.ach_key;
     }
 
     public NamespacedKey getOwnerKey() {
