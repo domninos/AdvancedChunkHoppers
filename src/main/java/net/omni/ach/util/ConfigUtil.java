@@ -69,7 +69,7 @@ public class ConfigUtil {
             savedDefaults.getAndIncrement();
         }
 
-        this.hopper_title = getAndDefaultString("hopper.title", "<green>%player%'s ChunkHopper</green>", savedDefaults::getAndAdd);
+        this.hopper_title = getAndDefaultString("hopper.title", "<green>ChunkHopper</green>", savedDefaults::getAndAdd);
 
         this.filler_mat = getAndDefaultString("hopper.filler.material", "GRAY_STAINED_GLASS_PANE", savedDefaults::getAndAdd);
         this.filler_display_name = getAndDefaultString("hopper.filler.display_name", " ", savedDefaults::getAndAdd);

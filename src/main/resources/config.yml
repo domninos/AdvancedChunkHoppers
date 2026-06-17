@@ -10,7 +10,7 @@ hopper:
   # !!! should also be greater than 18 for the whitelist, blacklist, back buttons items.
   # default: 54
   size: 54
-  title: "<green>%player%'s ChunkHopper</green>" # placeholder: %player%
+  title: "<green>ChunkHopper</green>"
 
   ###
   # you must use an all caps MATERIAL type
