@@ -29,6 +29,7 @@ public class ChunkHopperManager {
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new HashMap<>();
     private final Map<UUID, Integer> hopperLimits = new HashMap<>();
+    private final Map<UUID, Integer> hopperCounts = new HashMap<>();
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
@@ -299,6 +300,36 @@ public class ChunkHopperManager {
         return 5;
     }
 
+    public int getMaxHoppers(Player player) {
+        int max = -1;
+
+        for (Map.Entry<String, Integer> entry : plugin.getConfigUtil().getHoppersPlacedLimitsMap().entrySet()) {
+            if (player.hasPermission("lp.group." + entry.getKey())) {
+                if (entry.getValue() > max)
+                    max = entry.getValue();
+            }
+        }
+
+        return max;
+    }
+
+    public void loadHopperCount(Player player) {
+        int count = plugin.getDatabaseManager().countHoppersSync(player.getUniqueId());
+        hopperCounts.put(player.getUniqueId(), count);
+    }
+
+    public void addHopperCount(UUID ownerUUID) {
+        hopperCounts.merge(ownerUUID, 1, Integer::sum);
+    }
+
+    public void removeHopperCount(UUID ownerUUID) {
+        hopperCounts.computeIfPresent(ownerUUID, (uuid, count) -> count > 1 ? count - 1 : null);
+    }
+
+    public int getHopperCount(UUID ownerUUID) {
+        return hopperCounts.getOrDefault(ownerUUID, 0);
+    }
+
     public NamespacedKey getAchKey() {
         return this.ach_key;
     }
@@ -312,6 +343,7 @@ public class ChunkHopperManager {
             hopper.saveSync(plugin);
 
         hopperLimits.clear();
+        hopperCounts.clear();
         chunkHoppers.clear();
     }
 }

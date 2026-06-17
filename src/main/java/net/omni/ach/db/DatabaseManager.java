@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
@@ -246,6 +247,24 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Error while deleting from database!", e);
         }
+    }
+
+    public int countHoppersSync(UUID ownerUUID) {
+        String query = "SELECT COUNT(*) FROM chunk_hoppers WHERE owner_uuid = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, ownerUUID.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while counting hoppers in database!", e);
+        }
+
+        return 0;
     }
 
     public void closePool() {

@@ -147,6 +147,22 @@ public class ConfigUtil {
             }
         }
 
+        ConfigurationSection hoppersSection = plugin.getConfig().getConfigurationSection("hoppers_placed_limits");
+
+        if (hoppersSection != null) {
+            for (String group : hoppersSection.getKeys(false)) {
+                if (group == null || group.isEmpty())
+                    continue;
+
+                if (!hoppersSection.isInt(group)) {
+                    plugin.sendConsole("<yellow>Hoppers placed limit for '" + group + "' is not an integer. Skipping..</yellow>");
+                    continue;
+                }
+
+                hoppersPlacedLimitsMap.put(group.toLowerCase(), hoppersSection.getInt(group));
+            }
+        }
+
         if (savedDefaults.get() > 0) {
             plugin.saveConfig();
 
@@ -248,6 +264,10 @@ public class ConfigUtil {
         return limitsMap;
     }
 
+    public Map<String, Integer> getHoppersPlacedLimitsMap() {
+        return hoppersPlacedLimitsMap;
+    }
+
     public int getWhitelistInventorySize() {
         return whitelist_inventory_size;
     }
@@ -310,5 +330,6 @@ public class ConfigUtil {
 
     public void flush() {
         limitsMap.clear();
+        hoppersPlacedLimitsMap.clear();
     }
 }
