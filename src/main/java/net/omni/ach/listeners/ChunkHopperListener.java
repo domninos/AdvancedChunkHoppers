@@ -86,7 +86,6 @@ public class ChunkHopperListener implements Listener {
         }
 
         if (!hopper.canFitItem(drop)) {
-            event.setCancelled(true);
             Location above = hopper.getLocation().clone().add(0, 1, 0);
             itemEntity.teleport(above);
             hopper.notifyFull(plugin);
