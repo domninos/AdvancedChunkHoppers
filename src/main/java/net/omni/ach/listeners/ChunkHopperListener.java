@@ -4,6 +4,7 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import net.omni.ach.chunkhopper.ChunkHopperHolder;
 import net.omni.ach.util.Messages;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -27,17 +28,95 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class ChunkHopperListener implements Listener {
-
+    private static final int MAX_ITEMS_PER_TICK = 100;
+    private final Queue<Item> pendingItems = new ArrayDeque<>();
     private final AdvancedChunkHoppers plugin;
 
     public ChunkHopperListener(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
+
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            int processed = 0;
+
+            while (processed < MAX_ITEMS_PER_TICK) {
+                Item item = pendingItems.poll();
+
+                if (item == null)
+                    return;
+
+                if (item.isValid())
+                    collect(item);
+
+                processed++;
+            }
+        }, 1L, 1L);
+    }
+
+    private void collect(Item itemEntity) {
+        ItemStack drop = itemEntity.getItemStack();
+
+        Location location = itemEntity.getLocation();
+
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(location.getChunk());
+
+        if (hopper == null)
+            return;
+
+        if (!hopper.shouldCollect(drop))
+            return;
+
+        System.out.println("should collect yes");
+
+        int realAmount;
+        if (plugin.getRoseStackerHook().isEnabled())
+            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
+        else
+            realAmount = drop.getAmount();
+
+        if (realAmount != drop.getAmount()) {
+            drop = drop.clone();
+            drop.setAmount(realAmount);
+        }
+
+        System.out.println("amount: " + realAmount);
+
+        List<Container> bottoms = plugin.getChunkHopperManager().getBottomContainers(hopper);
+
+        if (bottoms.isEmpty())
+            return;
+
+        System.out.println("not empty");
+
+        ItemStack remaining = drop;
+
+        for (Container bottom : bottoms) {
+            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+            if (leftovers.isEmpty()) {
+                itemEntity.remove();
+                return;
+            }
+
+            remaining = leftovers.get(0);
+        }
+
+        if (!hopper.canFitItem(itemEntity, plugin)) {
+            hopper.notifyFull(plugin);
+            return;
+        }
+
+        Inventory mainInv = hopper.getMainInventory();
+        Map<Integer, ItemStack> leftovers = mainInv.addItem(remaining);
+
+        hopper.markDirty();
+
+        if (leftovers.isEmpty())
+            itemEntity.remove();
+        else
+            itemEntity.setItemStack(leftovers.get(0));
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -60,52 +139,10 @@ public class ChunkHopperListener implements Listener {
                 location.getBlockZ() == hopperLoc.getBlockZ())
             return;
 
-        ItemStack drop = itemEntity.getItemStack();
-
-        if (!hopper.shouldCollect(drop))
+        if (plugin.getChunkHopperManager().getActiveGuiLocations().contains(hopperLoc))
             return;
 
-        int realAmount;
-        if (plugin.getRoseStackerHook().isEnabled())
-            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
-        else
-            realAmount = drop.getAmount();
-
-        if (realAmount != drop.getAmount()) {
-            drop = drop.clone();
-            drop.setAmount(realAmount);
-        }
-
-        Block hopperBlock = hopper.getLocation().getBlock();
-        List<Container> bottoms = plugin.getChunkHopperManager().getBottomContainers(hopperBlock, hopper.getOwnerUUID());
-
-        ItemStack remaining = drop;
-        for (Container bottom : bottoms) {
-            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-            if (leftovers.isEmpty()) {
-                event.setCancelled(true);
-                return;
-            }
-            remaining = leftovers.get(0);
-        }
-
-        if (!hopper.canFitItem(remaining)) {
-            event.setCancelled(true);
-            Location above = hopperLoc.clone().add(0.5, 1.5, 0.5);
-            hopperLoc.getWorld().dropItem(above, remaining);
-            hopper.notifyFull(plugin);
-            return;
-        }
-
-        Inventory mainInv = hopper.getMainInventory();
-        Map<Integer, ItemStack> leftovers = mainInv.addItem(remaining);
-
-        hopper.markDirty();
-
-        if (leftovers.isEmpty())
-            event.setCancelled(true);
-        else
-            event.getEntity().setItemStack(leftovers.get(0));
+        pendingItems.add(itemEntity);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -143,8 +180,12 @@ public class ChunkHopperListener implements Listener {
             }
         }
 
-        Hopper hopper = (Hopper) block.getState();
+        org.bukkit.block.data.type.Hopper hopperData = (org.bukkit.block.data.type.Hopper) block.getBlockData();
 
+        hopperData.setEnabled(false);
+        block.setBlockData(hopperData, false);
+
+        Hopper hopper = (Hopper) block.getState();
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
 
         pdc.set(
@@ -155,13 +196,11 @@ public class ChunkHopperListener implements Listener {
 
         pdc.set(
                 plugin.getChunkHopperManager().getAchKey(),
-                PersistentDataType.STRING,
-                "true"
+                PersistentDataType.BYTE,
+                (byte) 1
         );
 
-        hopper.update();
-
-        plugin.getChunkHopperManager().getContainerLimit(block, player.getUniqueId());
+        hopper.update(true, false);
 
         ChunkHopper hopperObj = new ChunkHopper(block.getLocation(), player.getUniqueId(), plugin);
         Chunk chunk = block.getChunk();
@@ -183,7 +222,7 @@ public class ChunkHopperListener implements Listener {
     public void onHopperBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
 
-        if (!plugin.getChunkHopperManager().isACH(block))
+        if (!plugin.getChunkHopperManager().isACHLocation(block.getLocation()))
             return;
 
         Player player = event.getPlayer();
@@ -276,7 +315,7 @@ public class ChunkHopperListener implements Listener {
     @EventHandler
     public void onInventoryPickupItem(InventoryPickupItemEvent event) {
         if (event.getInventory().getHolder(false) instanceof Hopper hopper
-                && plugin.getChunkHopperManager().isACH(hopper.getBlock()))
+                && plugin.getChunkHopperManager().isACHLocation(hopper.getLocation()))
             event.setCancelled(true);
     }
 

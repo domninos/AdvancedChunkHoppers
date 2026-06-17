@@ -45,6 +45,7 @@ public class GUIManager {
             }
 
             if (hopper != null) {
+                plugin.getChunkHopperManager().getActiveGuiLocations().add(hopper.getLocation());
                 Bukkit.getScheduler().runTask(plugin, () -> hopper.openMainMenu(player, plugin));
             }
         });
