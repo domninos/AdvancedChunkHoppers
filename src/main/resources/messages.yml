@@ -17,3 +17,4 @@ no_open_perms: "<red>You do not have permission to open this hopper.</red>"
 
 hopper_full: "<red>Your ChunkHopper at <yellow>%x%, %y%, %z%</yellow> is full!</red>"
 filter_full: "<red>Filter is full!</red>"
+filter_conflict: "<red>That item is already in the other filter.</red>"

@@ -22,7 +22,8 @@ public enum Messages {
     NO_OPEN_PERMS("no_open_perms", "<red>You do not have permission to open this hopper.</red>"),
 
     HOPPER_FULL("hopper_full", "<red>Your ChunkHopper at <yellow>%x%, %y%, %z%</yellow> is full!</red>"),
-    FILTER_FULL("filter_full", "<red>Filter is full!</red>");
+    FILTER_FULL("filter_full", "<red>Filter is full!</red>"),
+    FILTER_CONFLICT("filter_conflict", "<red>That item is already in the other filter.</red>");
 
     private final String path;
     private final Object defaultVal;

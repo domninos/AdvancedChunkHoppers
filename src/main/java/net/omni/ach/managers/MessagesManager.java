@@ -14,7 +14,7 @@ public class MessagesManager {
     }
 
     public void loadMessages() {
-        plugin.reloadConfig();
+        plugin.getMessagesConfig().reload();
 
         FileConfiguration config = plugin.getMessagesConfig().getConfig();
 
