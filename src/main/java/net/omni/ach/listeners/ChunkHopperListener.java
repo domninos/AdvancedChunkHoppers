@@ -77,31 +77,28 @@ public class ChunkHopperListener implements Listener {
         }
 
         Block hopperBlock = hopper.getLocation().getBlock();
-        Container bottom = plugin.getChunkHopperManager()
-                .getBottomContainer(hopperBlock, hopper.getOwnerUUID());
+        List<Container> bottoms = plugin.getChunkHopperManager().getBottomContainers(hopperBlock, hopper.getOwnerUUID());
 
-        if (bottom != null) {
-            Inventory bottomInv = bottom.getInventory();
-            Map<Integer, ItemStack> leftovers = bottomInv.addItem(drop);
-
+        ItemStack remaining = drop;
+        for (Container bottom : bottoms) {
+            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
             if (leftovers.isEmpty()) {
                 event.setCancelled(true);
                 return;
             }
-
-            drop = leftovers.get(0);
+            remaining = leftovers.get(0);
         }
 
-        if (!hopper.canFitItem(drop)) {
+        if (!hopper.canFitItem(remaining)) {
             event.setCancelled(true);
             Location above = hopperLoc.clone().add(0.5, 1.5, 0.5);
-            hopperLoc.getWorld().dropItem(above, drop);
+            hopperLoc.getWorld().dropItem(above, remaining);
             hopper.notifyFull(plugin);
             return;
         }
 
         Inventory mainInv = hopper.getMainInventory();
-        Map<Integer, ItemStack> leftovers = mainInv.addItem(drop);
+        Map<Integer, ItemStack> leftovers = mainInv.addItem(remaining);
 
         hopper.markDirty();
 
@@ -279,13 +276,6 @@ public class ChunkHopperListener implements Listener {
                 && plugin.getChunkHopperManager().isACH(hopper.getBlock()))
             event.setCancelled(true);
     }
-//
-//    @EventHandler
-//    public void onInventoryMoveItem(InventoryMoveItemEvent event) {
-//        if (event.getInitiator().getHolder(false) instanceof Hopper hopper
-//                && plugin.getChunkHopperManager().isACH(hopper.getBlock()))
-//            event.setCancelled(true);
-//    }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
