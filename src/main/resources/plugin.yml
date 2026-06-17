@@ -9,3 +9,9 @@ load: POSTWORLD
 softdepend: [ GangsPlus, RoseStacker, CustomCrafting ]
 
 authors: [ domninos ]
+
+commands:
+  advancedchunkhopper:
+    usage: /<command>
+    description: Basic command for AdvancedChunkHoppers
+    aliases: [ach]
