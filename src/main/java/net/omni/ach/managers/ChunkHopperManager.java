@@ -23,15 +23,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChunkHopperManager {
     private static final int MAX_ITEMS_PER_TICK = 100;
+
     private final NamespacedKey ach_key;
     private final NamespacedKey containerLimitKey;
     private final NamespacedKey ownerKey;
     private final AdvancedChunkHoppers plugin;
+
     private final Map<String, ChunkHopper> chunkHoppers = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> hopperCounts = new ConcurrentHashMap<>();
     private final Map<Location, UUID> filterViewers = new ConcurrentHashMap<>();
     private final Set<Location> achHopperLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Queue<Item> pendingItems = new ArrayDeque<>();
+
     private BukkitRunnable pullerTask;
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
@@ -40,6 +43,26 @@ public class ChunkHopperManager {
         this.ach_key = new NamespacedKey(plugin, "chunk_hopper");
         this.containerLimitKey = new NamespacedKey(plugin, "chunk_hopper_container_limit");
         this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
+    }
+
+    public void collectItemsInChunk(Chunk chunk) {
+        if (chunk == null || !chunk.isLoaded() || !chunk.isEntitiesLoaded())
+            return;
+
+        for (Entity entity : chunk.getEntities()) {
+            if (!(entity instanceof Item item))
+                continue;
+
+            if (item.isDead())
+                continue;
+
+            addPendingItem(item);
+        }
+    }
+
+    public void addPendingItem(Item item) {
+        if (item != null)
+            pendingItems.add(item);
     }
 
     public void init() {
@@ -142,6 +165,43 @@ public class ChunkHopperManager {
         bottoms.clear();
     }
 
+    @Nullable
+    public ChunkHopper getChunkHopper(Chunk chunk) {
+        ChunkHopper hopper = chunkHoppers.get(chunkKey(chunk));
+
+        if (hopper == null) {
+            unregisterHopper(chunk);
+            return null;
+        }
+
+        return hopper;
+    }
+
+    private static boolean hasSpaceFor(Inventory inv, ItemStack item) {
+        int needed = item.getAmount();
+        int maxStack = item.getMaxStackSize();
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack slot = inv.getItem(i);
+
+            if (slot == null || slot.getType() == Material.AIR)
+                return true;
+
+            if (slot.isSimilar(item)) {
+                int space = maxStack - slot.getAmount();
+
+                if (space > 0) {
+                    needed -= space;
+
+                    if (needed <= 0)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public void pushItemsDown(ChunkHopper hopper) {
         Inventory mainInv = hopper.getMainInventory();
         int itemSlots = mainInv.getSize() - 9;
@@ -188,43 +248,6 @@ public class ChunkHopperManager {
         return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
     }
 
-    @Nullable
-    public ChunkHopper getChunkHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.get(chunkKey(chunk));
-
-        if (hopper == null) {
-            unregisterHopper(chunk);
-            return null;
-        }
-
-        return hopper;
-    }
-
-    private static boolean hasSpaceFor(Inventory inv, ItemStack item) {
-        int needed = item.getAmount();
-        int maxStack = item.getMaxStackSize();
-
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack slot = inv.getItem(i);
-
-            if (slot == null || slot.getType() == Material.AIR)
-                return true;
-
-            if (slot.isSimilar(item)) {
-                int space = maxStack - slot.getAmount();
-
-                if (space > 0) {
-                    needed -= space;
-
-                    if (needed <= 0)
-                        return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     public void unregisterHopper(Chunk chunk) {
         ChunkHopper hopper = chunkHoppers.remove(chunkKey(chunk));
 
@@ -264,11 +287,6 @@ public class ChunkHopperManager {
 
             addPendingItem(item);
         }
-    }
-
-    public void addPendingItem(Item item) {
-        if (item != null)
-            pendingItems.add(item);
     }
 
     public void loadFromChunkAsync(Chunk chunk, Runnable afterRegister) {
