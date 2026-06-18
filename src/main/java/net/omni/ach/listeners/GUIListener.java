@@ -262,8 +262,7 @@ public class GUIListener implements Listener {
                 plugin.getChunkHopperManager().removeFilterViewer(hopper.getLocation(), player.getUniqueId());
             }
 
-            case MAIN -> {
-            }
+            case MAIN -> plugin.getChunkHopperManager().pushItemsDown(hopper);
         }
 
         hopper.save(plugin);
