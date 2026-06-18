@@ -95,6 +95,7 @@ public class ChunkHopperListener implements Listener {
 
         org.bukkit.block.data.type.Hopper hopperData = (org.bukkit.block.data.type.Hopper) block.getBlockData();
 
+        // to prevent the normal hopper functionality
         hopperData.setEnabled(false);
         block.setBlockData(hopperData, false);
 
@@ -247,11 +248,10 @@ public class ChunkHopperListener implements Listener {
 
             ItemStack leftover = plugin.getChunkHopperManager().depositToHopper(hopper, drop);
 
-            if (leftover == null) {
+            if (leftover == null)
                 it.remove();
-            } else if (leftover.getAmount() < drop.getAmount()) {
+            else if (leftover.getAmount() < drop.getAmount())
                 drop.setAmount(leftover.getAmount());
-            }
         }
     }
 
