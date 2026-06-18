@@ -48,9 +48,9 @@ public class ACHCommand implements CommandExecutor {
                 plugin.getChunkHopperManager().reloadPullerTask();
 
                 if (restartNeeded)
-                    plugin.sendMessage(sender, "<green>config.yml and messages.yml have been reloaded.</green>\n<gray>Note: Inventory size/title changes require a server restart for existing hoppers.</gray>");
+                    plugin.sendMessage(sender, getMessages() + "\n<gray>Note: Inventory size/title changes require a server restart for existing hoppers.</gray>");
                 else
-                    plugin.sendMessage(sender, "<green>config.yml and messages.yml have been reloaded.</green>");
+                    plugin.sendMessage(sender, Messages.RELOADED.toString());
             } else if (args[0].equalsIgnoreCase("about"))
                 sender.sendMessage(MessageUtil.parse(getAboutText()));
             else
@@ -61,6 +61,10 @@ public class ACHCommand implements CommandExecutor {
             plugin.sendMessage(sender, Messages.UNKNOWN_COMMAND.toString());
 
         return true;
+    }
+
+    private @org.jspecify.annotations.NonNull Messages getMessages() {
+        return Messages.RELOADED;
     }
 
     private void sendHelp(CommandSender sender) {
