@@ -27,7 +27,7 @@ public class ChunkHopperManager {
     private final NamespacedKey containerLimitKey;
     private final NamespacedKey ownerKey;
     private final AdvancedChunkHoppers plugin;
-    private final Map<Long, ChunkHopper> chunkHoppers = new ConcurrentHashMap<>();
+    private final Map<String, ChunkHopper> chunkHoppers = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> hopperCounts = new ConcurrentHashMap<>();
     private final Map<Location, UUID> filterViewers = new ConcurrentHashMap<>();
     private final Set<Location> achHopperLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -185,9 +185,13 @@ public class ChunkHopperManager {
             hopper.markDirty();
     }
 
+    private static String chunkKey(Chunk chunk) {
+        return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
+    }
+
     @Nullable
     public ChunkHopper getChunkHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.get(chunk.getChunkKey());
+        ChunkHopper hopper = chunkHoppers.get(chunkKey(chunk));
 
         if (hopper == null) {
             unregisterHopper(chunk);
@@ -223,7 +227,7 @@ public class ChunkHopperManager {
     }
 
     public void unregisterHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.remove(chunk.getChunkKey());
+        ChunkHopper hopper = chunkHoppers.remove(chunkKey(chunk));
 
         if (hopper != null)
             achHopperLocations.remove(hopper.getLocation());
@@ -297,7 +301,7 @@ public class ChunkHopperManager {
         if (!chunk.isLoaded() || !chunk.isEntitiesLoaded())
             return false;
 
-        return chunkHoppers.containsKey(chunk.getChunkKey());
+        return chunkHoppers.containsKey(chunkKey(chunk));
     }
 
     @Nullable
@@ -373,7 +377,7 @@ public class ChunkHopperManager {
     }
 
     public void registerHopper(Chunk chunk, ChunkHopper hopper) {
-        chunkHoppers.put(chunk.getChunkKey(), hopper);
+        chunkHoppers.put(chunkKey(chunk), hopper);
         achHopperLocations.add(hopper.getLocation());
     }
 
@@ -447,7 +451,7 @@ public class ChunkHopperManager {
         return this.ownerKey;
     }
 
-    public Map<Long, ChunkHopper> getChunkHoppers() {
+    public Map<String, ChunkHopper> getChunkHoppers() {
         return chunkHoppers;
     }
 

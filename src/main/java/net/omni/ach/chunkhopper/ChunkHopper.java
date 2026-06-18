@@ -1,8 +1,7 @@
 package net.omni.ach.chunkhopper;
 
-import net.kyori.adventure.text.Component;
 import net.omni.ach.AdvancedChunkHoppers;
-import net.omni.ach.util.MessageUtil;
+import net.omni.ach.util.ChatRenderer;
 import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -28,12 +27,15 @@ public class ChunkHopper {
     private final Inventory mainInventory;
     private final Inventory whitelistInventory;
     private final Inventory blacklistInventory;
+    private final ChatRenderer renderer;
     private long lastFullWarning = 0;
     private boolean dirty = false;
     private int containerLimit;
     private transient List<Location> cachedBottomContainers;
 
     public ChunkHopper(Location location, UUID ownerUUID, AdvancedChunkHoppers plugin) {
+        this.renderer = plugin.getChatRenderer();
+
         this.location = location;
         this.ownerUUID = ownerUUID;
         this.containerLimit = plugin.getChunkHopperManager().readContainerLimitSync(location.getBlock());
@@ -42,20 +44,20 @@ public class ChunkHopper {
         int whitelistSize = plugin.getConfigUtil().getWhitelistInventorySize();
         int blacklistSize = plugin.getConfigUtil().getBlacklistInventorySize();
 
-        this.mainInventory = Bukkit.createInventory(
+        this.mainInventory = renderer.createInventory(
                 new ChunkHopperHolder(this, InventoryType.MAIN),
                 mainSize,
-                MessageUtil.parse(plugin.getConfigUtil().getHopperTitle()));
+                plugin.getConfigUtil().getHopperTitle());
 
-        this.whitelistInventory = Bukkit.createInventory(
+        this.whitelistInventory = renderer.createInventory(
                 new ChunkHopperHolder(this, InventoryType.WHITELIST),
                 whitelistSize,
-                MessageUtil.parse(plugin.getConfigUtil().getWhitelistInventoryTitle()));
+                plugin.getConfigUtil().getWhitelistInventoryTitle());
 
-        this.blacklistInventory = Bukkit.createInventory(
+        this.blacklistInventory = renderer.createInventory(
                 new ChunkHopperHolder(this, InventoryType.BLACKLIST),
                 blacklistSize,
-                MessageUtil.parse(plugin.getConfigUtil().getBlacklistInventoryTitle()));
+                plugin.getConfigUtil().getBlacklistInventoryTitle());
 
         setupMainButtons(plugin);
     }
@@ -70,30 +72,27 @@ public class ChunkHopper {
         mainInventory.setItem(plugin.getConfigUtil().getWhitelistSlot(),
                 createItem(plugin.getConfigUtil().getWhitelistMat(),
                         plugin.getConfigUtil().getWhitelistDisplayName(),
-                        plugin.getConfigUtil().getWhitelistLore().stream()
-                                .map(MessageUtil::parse).toArray(Component[]::new)));
+                        plugin.getConfigUtil().getWhitelistLore().toArray(String[]::new)));
 
         mainInventory.setItem(plugin.getConfigUtil().getBackButtonSlot(),
                 createItem(plugin.getConfigUtil().getBackButtonMat(),
                         plugin.getConfigUtil().getBackButtonDisplayName(),
-                        plugin.getConfigUtil().getBackButtonLore().stream()
-                                .map(MessageUtil::parse).toArray(Component[]::new)));
+                        plugin.getConfigUtil().getBackButtonLore().toArray(String[]::new)));
 
         mainInventory.setItem(plugin.getConfigUtil().getBlacklistSlot(),
                 createItem(plugin.getConfigUtil().getBlacklistMat(),
                         plugin.getConfigUtil().getBlacklistDisplayName(),
-                        plugin.getConfigUtil().getBlacklistLore().stream()
-                                .map(MessageUtil::parse).toArray(Component[]::new)));
+                        plugin.getConfigUtil().getBlacklistLore().toArray(String[]::new)));
     }
 
-    private ItemStack createItem(Material material, String name, Component... lore) {
+    private ItemStack createItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.customName(MessageUtil.parse(name));
+        renderer.setDisplayName(meta, name);
 
         if (lore != null && lore.length > 0)
-            meta.lore(List.of(lore));
+            renderer.setLore(meta, List.of(lore));
 
         item.setItemMeta(meta);
         return item;
@@ -158,7 +157,6 @@ public class ChunkHopper {
                 result.add(container);
         }
 
-        // get the very bottom
         Collections.reverse(result);
 
         return result;
@@ -280,12 +278,11 @@ public class ChunkHopper {
         lastFullWarning = now;
 
         Player owner = Bukkit.getPlayer(ownerUUID);
-        if (owner != null && owner.isOnline()) {
+        if (owner != null && owner.isOnline())
             plugin.sendMessage(owner, Messages.HOPPER_FULL.replace(
                     "x", String.valueOf(location.getBlockX()),
                     "y", String.valueOf(location.getBlockY()),
                     "z", String.valueOf(location.getBlockZ())));
-        }
     }
 
     public void openMainMenu(Player player, AdvancedChunkHoppers plugin) {
@@ -307,10 +304,10 @@ public class ChunkHopper {
     private Inventory buildFilterGUI(int size, String title, int backSlot,
                                      Inventory filterSource, InventoryType type,
                                      AdvancedChunkHoppers plugin) {
-        Inventory gui = Bukkit.createInventory(
+        Inventory gui = renderer.createInventory(
                 new ChunkHopperHolder(this, type),
                 size,
-                MessageUtil.parse(title));
+                title);
 
         for (int i = size - 1; i >= (size - 9); i--)
             gui.setItem(i, createItem(plugin.getConfigUtil().getFillerMat(),
@@ -319,8 +316,7 @@ public class ChunkHopper {
         gui.setItem(backSlot,
                 createItem(plugin.getConfigUtil().getBackButtonMat(),
                         plugin.getConfigUtil().getBackButtonDisplayName(),
-                        plugin.getConfigUtil().getBackButtonLore().stream()
-                                .map(MessageUtil::parse).toArray(Component[]::new)));
+                        plugin.getConfigUtil().getBackButtonLore().toArray(String[]::new)));
 
         int itemSlots = size - 9;
 
@@ -390,6 +386,9 @@ public class ChunkHopper {
     }
 
     public void invalidateBottomContainerCache() {
+        if (cachedBottomContainers != null)
+            cachedBottomContainers.clear();
+
         this.cachedBottomContainers = null;
     }
 }

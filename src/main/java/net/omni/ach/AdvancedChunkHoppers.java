@@ -1,7 +1,5 @@
 package net.omni.ach;
 
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.omni.ach.commands.ACHCommand;
 import net.omni.ach.db.DatabaseManager;
 import net.omni.ach.hooks.CustomCraftingHook;
@@ -15,9 +13,7 @@ import net.omni.ach.managers.CacheManager;
 import net.omni.ach.managers.ChunkHopperManager;
 import net.omni.ach.managers.GUIManager;
 import net.omni.ach.managers.MessagesManager;
-import net.omni.ach.util.ACHConfig;
-import net.omni.ach.util.ConfigUtil;
-import net.omni.ach.util.MessageUtil;
+import net.omni.ach.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -41,6 +37,8 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     private ConfigUtil configUtil;
 
+    private ChatRenderer chatRenderer;
+
     @Override
     public void onDisable() {
         chunkHopperManager.flush();
@@ -49,9 +47,9 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         configUtil.flush();
         messagesManager.flush();
 
-        luckPermsHook.unregister();
+        if (luckPermsHook != null)
+            luckPermsHook.unregister();
 
-        // close pool after all saves are done
         databaseManager.closePool();
 
         sendConsole("<red>Successfully disabled.</red>");
@@ -60,6 +58,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        initChatRenderer();
 
         this.messagesConfig = new ACHConfig(this, "messages.yml");
         this.messagesManager = new MessagesManager(this);
@@ -83,11 +82,20 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
         registerListeners();
 
-        // getDescription() is deprecated on paper, should keep for spigot support
-        sendConsole("<green>Successfully started <name>-v<version> </green>",
-                Placeholder.parsed("name", getDescription().getName()),
-                Placeholder.parsed("version", getDescription().getVersion())
-        );
+        sendConsole("<green>Successfully started " + getDescription().getName() + "-v" + getDescription().getVersion() + " </green>");
+    }
+
+    private void initChatRenderer() {
+        try {
+            Class.forName("net.kyori.adventure.text.Component");
+            this.chatRenderer = new PaperChatRenderer();
+            sendConsole("<green>PaperMC detected. Using PaperChatRenderer.</green>");
+        } catch (ClassNotFoundException e) {
+            this.chatRenderer = new SpigotChatRenderer();
+            sendConsole("<gray>Spigot detected. Using SpigotChatRenderer.</gray>");
+        }
+
+        MessageUtil.init(chatRenderer);
     }
 
     private void registerHooks() {
@@ -126,20 +134,16 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         new GUIListener(this).register();
     }
 
-    public void sendConsole(String message, TagResolver... resolvers) {
-        sendMessage(Bukkit.getConsoleSender(), message, resolvers);
-    }
-
-    public void sendMessage(CommandSender sender, String message, TagResolver... resolvers) {
-        sender.sendMessage(MessageUtil.color(message, resolvers));
-    }
-
     public void sendConsole(String message) {
-        sendMessage(Bukkit.getConsoleSender(), message);
+        chatRenderer.sendMessage(Bukkit.getConsoleSender(), chatRenderer.color(message));
     }
 
     public void sendMessage(CommandSender sender, String message) {
-        sender.sendMessage(MessageUtil.color(message));
+        chatRenderer.sendMessage(sender, chatRenderer.color(message));
+    }
+
+    public ChatRenderer getChatRenderer() {
+        return chatRenderer;
     }
 
     public DatabaseManager getDatabaseManager() {

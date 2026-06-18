@@ -53,7 +53,7 @@ public class ACHCommand implements CommandExecutor {
                 else
                     plugin.sendMessage(sender, Messages.RELOADED.toString());
             } else if (args[0].equalsIgnoreCase("about"))
-                sender.sendMessage(MessageUtil.parse(getAboutText()));
+                plugin.getChatRenderer().sendMessage(sender, getAboutText());
             else
                 plugin.sendMessage(sender, Messages.UNKNOWN_COMMAND.toString());
 
@@ -67,7 +67,6 @@ public class ACHCommand implements CommandExecutor {
     private void sendHelp(CommandSender sender) {
         StringBuilder helpBuilder = new StringBuilder();
 
-        // header
         helpBuilder.append("\n<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>\n");
         helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>\n\n");
 
@@ -81,10 +80,9 @@ public class ACHCommand implements CommandExecutor {
             helpBuilder.append(MessageUtil.formatString("ach <#55FFFF>about</#55FFFF>", "Shows basic information about this plugin."));
         }
 
-        // footer
         helpBuilder.append("<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>");
 
-        sender.sendMessage(MessageUtil.parse(helpBuilder.toString()));
+        plugin.getChatRenderer().sendMessage(sender, helpBuilder.toString());
     }
 
     private @NonNull String getAboutText() {
