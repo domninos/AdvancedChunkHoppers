@@ -5,7 +5,6 @@ import net.omni.ach.chunkhopper.ChunkHopper;
 import net.omni.ach.chunkhopper.ChunkHopperHolder;
 import net.omni.ach.chunkhopper.InventoryType;
 import net.omni.ach.util.Messages;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -249,27 +248,20 @@ public class GUIListener implements Listener {
         InventoryView view = event.getView();
         Inventory top = view.getTopInventory();
 
-        // handle containers below hopper
-        Location hopperLoc = plugin.getChunkHopperManager().getContainerToHopperLoc().remove(top);
-
-        if (hopperLoc != null) {
-            plugin.getChunkHopperManager().getActiveGuiLocations().remove(hopperLoc);
-        }
-
         if (!(top.getHolder() instanceof ChunkHopperHolder(ChunkHopper hopper, InventoryType type)))
             return;
-
-        plugin.getChunkHopperManager().getActiveGuiLocations().remove(hopper.getLocation());
 
         switch (type) {
             case WHITELIST -> {
                 hopper.applyWhitelistChanges(top);
                 plugin.getChunkHopperManager().removeFilterViewer(hopper.getLocation(), player.getUniqueId());
             }
+
             case BLACKLIST -> {
                 hopper.applyBlacklistChanges(top);
                 plugin.getChunkHopperManager().removeFilterViewer(hopper.getLocation(), player.getUniqueId());
             }
+
             case MAIN -> {
             }
         }

@@ -95,8 +95,7 @@ public class ChunkHopper {
         return item;
     }
 
-    public void loadItems(List<ItemStack> items,
-                          List<ItemStack> whitelist, List<ItemStack> blacklist) {
+    public void loadItems(List<ItemStack> items, List<ItemStack> whitelist, List<ItemStack> blacklist) {
         int mainItemSlots = mainInventory.getSize() - 9;
         int whitelistItemSlots = whitelistInventory.getSize() - 9;
         int blacklistItemSlots = blacklistInventory.getSize() - 9;
@@ -109,6 +108,7 @@ public class ChunkHopper {
     private void fillSlots(Inventory inv, List<ItemStack> items, int limit) {
         for (int i = 0; i < Math.min(items.size(), limit); i++) {
             ItemStack it = items.get(i);
+
             if (it != null && it.getType() != Material.AIR)
                 inv.setItem(i, it);
         }
@@ -177,6 +177,7 @@ public class ChunkHopper {
 
                 if (space > 0) {
                     quantity -= space;
+
                     if (quantity <= 0)
                         return true;
                 }

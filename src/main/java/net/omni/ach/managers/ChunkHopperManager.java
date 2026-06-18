@@ -32,8 +32,6 @@ public class ChunkHopperManager {
     private final Map<Location, UUID> filterViewers = new ConcurrentHashMap<>();
 
     private final Set<Location> achHopperLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Set<Location> activeGuiLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Map<Inventory, Location> containerToHopperLoc = new ConcurrentHashMap<>();
 
     private BukkitRunnable pullerTask;
 
@@ -45,9 +43,6 @@ public class ChunkHopperManager {
         this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
     }
 
-    public Map<Inventory, Location> getContainerToHopperLoc() {
-        return containerToHopperLoc;
-    }
 
     public void init() {
         startPullingTask();
@@ -212,7 +207,9 @@ public class ChunkHopperManager {
 
     public void collectNearbyItems(ChunkHopper hopper) {
         Location loc = hopper.getLocation();
-        if (loc.getWorld() == null) return;
+
+        if (loc.getWorld() == null)
+            return;
 
         Chunk chunk = loc.getChunk();
 
@@ -221,7 +218,9 @@ public class ChunkHopperManager {
             if (item.isDead()) continue;
 
             ItemStack drop = item.getItemStack();
-            if (!hopper.shouldCollect(drop)) continue;
+
+            if (!hopper.shouldCollect(drop))
+                continue;
 
             int realAmount;
             if (plugin.getRoseStackerHook().isEnabled())
@@ -270,10 +269,6 @@ public class ChunkHopperManager {
                 hopper.notifyFull(plugin);
             }
         }
-    }
-
-    public Set<Location> getActiveGuiLocations() {
-        return activeGuiLocations;
     }
 
     public void loadFromChunkAsync(Chunk chunk) {
@@ -483,11 +478,10 @@ public class ChunkHopperManager {
         hopperCounts.clear();
         chunkHoppers.clear();
 
+        filterViewers.clear();
+        achHopperLocations.clear();
+
         if (pullerTask != null)
             pullerTask.cancel();
-
-        filterViewers.clear();
-        activeGuiLocations.clear();
-        achHopperLocations.clear();
     }
 }
