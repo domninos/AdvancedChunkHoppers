@@ -22,18 +22,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChunkHopperManager {
+    private static final int MAX_ITEMS_PER_TICK = 100;
     private final NamespacedKey ach_key;
     private final NamespacedKey containerLimitKey;
     private final NamespacedKey ownerKey;
-
     private final AdvancedChunkHoppers plugin;
     private final Map<Long, ChunkHopper> chunkHoppers = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> hopperCounts = new ConcurrentHashMap<>();
     private final Map<Location, UUID> filterViewers = new ConcurrentHashMap<>();
-
     private final Set<Location> achHopperLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-    private static final int MAX_ITEMS_PER_TICK = 100;
     private final Queue<Item> pendingItems = new ArrayDeque<>();
     private BukkitRunnable pullerTask;
 
@@ -76,45 +73,6 @@ public class ChunkHopperManager {
         };
 
         pullerTask.runTaskTimer(plugin, interval, interval);
-    }
-
-    public void reloadPullerTask() {
-        startPullingTask();
-    }
-
-    public void addPendingItem(Item item) {
-        if (item != null)
-            pendingItems.add(item);
-    }
-
-    public boolean isFilterViewer(Location location, UUID viewerUUID) {
-        UUID current = filterViewers.get(location);
-        return current != null && !current.equals(viewerUUID);
-    }
-
-    public void setFilterViewer(Location location, UUID viewerUUID) {
-        filterViewers.put(location, viewerUUID);
-    }
-
-    public void removeFilterViewer(Location location, UUID viewerUUID) {
-        filterViewers.remove(location, viewerUUID);
-    }
-
-    public void collectNearbyItems(ChunkHopper hopper) {
-        Location loc = hopper.getLocation();
-
-        if (loc.getWorld() == null)
-            return;
-
-        for (Entity entity : loc.getChunk().getEntities()) {
-            if (!(entity instanceof Item item))
-                continue;
-
-            if (item.isDead())
-                continue;
-
-            addPendingItem(item);
-        }
     }
 
     private void collect(Item itemEntity) {
@@ -179,6 +137,64 @@ public class ChunkHopperManager {
 
         itemEntity.setItemStack(leftover);
         hopper.markDirty();
+
+        pushItemsDown(hopper);
+
+        bottoms.clear();
+    }
+
+    public void pushItemsDown(ChunkHopper hopper) {
+        Inventory mainInv = hopper.getMainInventory();
+        int itemSlots = mainInv.getSize() - 9;
+        List<Container> bottoms = hopper.getBottomContainers(plugin);
+
+        if (bottoms.isEmpty())
+            return;
+
+        boolean changed = false;
+
+        for (int i = 0; i < itemSlots; i++) {
+            ItemStack item = mainInv.getItem(i);
+
+            if (item == null || item.getType() == Material.AIR)
+                continue;
+
+            ItemStack remaining = item.clone();
+
+            for (Container bottom : bottoms) {
+                if (!hasSpaceFor(bottom.getInventory(), remaining))
+                    continue;
+
+                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+                if (leftovers.isEmpty()) {
+                    remaining = null;
+                    break;
+                }
+
+                remaining = leftovers.get(0);
+            }
+
+            if (remaining == null || remaining.getAmount() < item.getAmount()) {
+                mainInv.setItem(i, remaining);
+                changed = true;
+            }
+        }
+
+        if (changed)
+            hopper.markDirty();
+    }
+
+    @Nullable
+    public ChunkHopper getChunkHopper(Chunk chunk) {
+        ChunkHopper hopper = chunkHoppers.get(chunk.getChunkKey());
+
+        if (hopper == null) {
+            unregisterHopper(chunk);
+            return null;
+        }
+
+        return hopper;
     }
 
     private static boolean hasSpaceFor(Inventory inv, ItemStack item) {
@@ -204,6 +220,52 @@ public class ChunkHopperManager {
         }
 
         return false;
+    }
+
+    public void unregisterHopper(Chunk chunk) {
+        ChunkHopper hopper = chunkHoppers.remove(chunk.getChunkKey());
+
+        if (hopper != null)
+            achHopperLocations.remove(hopper.getLocation());
+    }
+
+    public void reloadPullerTask() {
+        startPullingTask();
+    }
+
+    public boolean isFilterViewer(Location location, UUID viewerUUID) {
+        UUID current = filterViewers.get(location);
+        return current != null && !current.equals(viewerUUID);
+    }
+
+    public void setFilterViewer(Location location, UUID viewerUUID) {
+        filterViewers.put(location, viewerUUID);
+    }
+
+    public void removeFilterViewer(Location location, UUID viewerUUID) {
+        filterViewers.remove(location, viewerUUID);
+    }
+
+    public void collectNearbyItems(ChunkHopper hopper) {
+        Location loc = hopper.getLocation();
+
+        if (loc.getWorld() == null)
+            return;
+
+        for (Entity entity : loc.getChunk().getEntities()) {
+            if (!(entity instanceof Item item))
+                continue;
+
+            if (item.isDead())
+                continue;
+
+            addPendingItem(item);
+        }
+    }
+
+    public void addPendingItem(Item item) {
+        if (item != null)
+            pendingItems.add(item);
     }
 
     public void loadFromChunkAsync(Chunk chunk, Runnable afterRegister) {
@@ -341,25 +403,6 @@ public class ChunkHopperManager {
         Integer limit = pdc.get(containerLimitKey, PersistentDataType.INTEGER);
 
         return limit != null ? limit : 0;
-    }
-
-    @Nullable
-    public ChunkHopper getChunkHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.get(chunk.getChunkKey());
-
-        if (hopper == null) {
-            unregisterHopper(chunk);
-            return null;
-        }
-
-        return hopper;
-    }
-
-    public void unregisterHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.remove(chunk.getChunkKey());
-
-        if (hopper != null)
-            achHopperLocations.remove(hopper.getLocation());
     }
 
     public boolean isACHLocation(Location location) {
