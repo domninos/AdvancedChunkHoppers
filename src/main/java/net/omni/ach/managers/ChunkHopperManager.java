@@ -100,17 +100,23 @@ public class ChunkHopperManager {
             List<Container> bottoms = getBottomContainers(hopper);
 
             ItemStack remaining = drop;
+            boolean fullyDeposited = false;
+
             for (Container bottom : bottoms) {
                 Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
 
                 if (leftovers.isEmpty()) {
                     item.remove();
                     hopper.markDirty();
-                    continue;
+                    fullyDeposited = true;
+                    break;
                 }
 
                 remaining = leftovers.get(0);
             }
+
+            if (fullyDeposited)
+                continue;
 
             if (!hopper.canFitItem(item, plugin))
                 continue;
@@ -132,7 +138,7 @@ public class ChunkHopperManager {
         Inventory mainInv = hopper.getMainInventory();
         int itemSlots = mainInv.getSize() - 9;
 
-        List<Container> bottoms = getBottomContainers(hopper);
+        List<Container> bottoms = hopper.getBottomContainers(plugin);
         if (bottoms.isEmpty()) return;
 
         boolean changed = false;
@@ -166,23 +172,7 @@ public class ChunkHopperManager {
     }
 
     public List<Container> getBottomContainers(ChunkHopper hopper) {
-        int limit = hopper.getContainerLimit();
-
-        List<Container> containers = new ArrayList<>();
-        Block current = hopper.getLocation().getBlock().getRelative(0, -1, 0);
-        int scanned = 0;
-
-        while (plugin.getConfigUtil().getContainerMaterials().contains(current.getType()) && (limit == -1 || scanned < limit)) {
-            if (current.getState(false) instanceof Container container)
-                containers.add(container);
-            else
-                break;
-
-            current = current.getRelative(0, -1, 0);
-            scanned++;
-        }
-
-        return containers;
+        return hopper.getBottomContainers(plugin);
     }
 
     public boolean isFilterViewer(Location location, UUID viewerUUID) {
@@ -233,7 +223,7 @@ public class ChunkHopperManager {
                 drop.setAmount(realAmount);
             }
 
-            List<Container> bottoms = getBottomContainers(hopper);
+            List<Container> bottoms = hopper.getBottomContainers(plugin);
 
             if (bottoms.isEmpty())
                 return;
@@ -282,9 +272,11 @@ public class ChunkHopperManager {
 
         load(location).thenAccept(hopper -> {
             if (hopper != null) {
-                recalculateLimit(hopper);
-                registerHopper(chunk, hopper);
-                plugin.getCacheManager().putIfAbsent(location, hopper);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    recalculateLimit(hopper);
+                    registerHopper(chunk, hopper);
+                    plugin.getCacheManager().putIfAbsent(location, hopper);
+                });
             }
         });
     }
@@ -389,10 +381,8 @@ public class ChunkHopperManager {
         if (!(hopperBlock.getState() instanceof Hopper hopper))
             return;
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
-            hopper.update();
-        });
+        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
+        hopper.update();
     }
 
     public int readContainerLimitSync(Block block) {
@@ -472,8 +462,10 @@ public class ChunkHopperManager {
     }
 
     public void flush() {
-        for (ChunkHopper hopper : chunkHoppers.values())
+        for (ChunkHopper hopper : chunkHoppers.values()) {
             hopper.saveSync(plugin);
+            hopper.flush();
+        }
 
         hopperCounts.clear();
         chunkHoppers.clear();

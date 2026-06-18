@@ -7,6 +7,9 @@ import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -28,6 +31,7 @@ public class ChunkHopper {
     private long lastFullWarning = 0;
     private boolean dirty = false;
     private int containerLimit;
+    private transient List<Location> cachedBottomContainers;
 
     public ChunkHopper(Location location, UUID ownerUUID, AdvancedChunkHoppers plugin) {
         this.location = location;
@@ -140,6 +144,36 @@ public class ChunkHopper {
 
     public void setContainerLimit(int containerLimit) {
         this.containerLimit = containerLimit;
+    }
+
+    public List<Container> getBottomContainers(AdvancedChunkHoppers plugin) {
+        if (cachedBottomContainers == null)
+            cachedBottomContainers = scanBottomContainers(plugin);
+
+        List<Container> result = new ArrayList<>();
+        for (Location loc : cachedBottomContainers) {
+            BlockState state = loc.getBlock().getState(false);
+
+            if (state instanceof Container container)
+                result.add(container);
+        }
+        return result;
+    }
+
+    private List<Location> scanBottomContainers(AdvancedChunkHoppers plugin) {
+        List<Location> locs = new ArrayList<>();
+        int limit = this.containerLimit;
+        Block current = this.location.getBlock().getRelative(0, -1, 0);
+        int scanned = 0;
+
+        while (plugin.getConfigUtil().getContainerMaterials().contains(current.getType())
+                && (limit == -1 || scanned < limit)) {
+            locs.add(current.getLocation());
+            current = current.getRelative(0, -1, 0);
+            scanned++;
+        }
+
+        return locs;
     }
 
     public void markDirty() {
@@ -382,5 +416,13 @@ public class ChunkHopper {
 
     public boolean isBackButtonSlot(int slot, AdvancedChunkHoppers plugin) {
         return slot == plugin.getConfigUtil().getBackButtonSlot();
+    }
+
+    public void flush() {
+        invalidateBottomContainerCache();
+    }
+
+    public void invalidateBottomContainerCache() {
+        this.cachedBottomContainers = null;
     }
 }
