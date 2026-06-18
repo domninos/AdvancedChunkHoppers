@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -156,6 +157,10 @@ public class ChunkHopper {
             if (state instanceof Container container)
                 result.add(container);
         }
+
+        // get the very bottom
+        Collections.reverse(result);
+
         return result;
     }
 
