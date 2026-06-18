@@ -148,6 +148,7 @@ public class ChunkHopperManager {
         if (leftovers.isEmpty()) {
             itemEntity.remove();
             hopper.markDirty();
+            pushItemsDown(hopper);
             return;
         }
 
