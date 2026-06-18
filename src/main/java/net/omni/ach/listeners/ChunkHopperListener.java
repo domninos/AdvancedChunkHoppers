@@ -9,8 +9,8 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -31,93 +31,44 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.*;
 
 public class ChunkHopperListener implements Listener {
-    // TODO configurable?
-    private static final int MAX_ITEMS_PER_TICK = 100;
-
-    private final Queue<Item> pendingItems = new ArrayDeque<>();
 
     private final AdvancedChunkHoppers plugin;
 
     public ChunkHopperListener(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
-
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            int processed = 0;
-
-            while (processed < MAX_ITEMS_PER_TICK) {
-                Item item = pendingItems.poll();
-
-                if (item == null)
-                    return;
-
-                if (item.isValid())
-                    collect(item);
-
-                processed++;
-            }
-        }, 1L, 1L);
     }
 
-    private void collect(Item itemEntity) {
-        ItemStack drop = itemEntity.getItemStack();
-
-        Location location = itemEntity.getLocation();
-
-        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(location.getChunk());
+    public void scanChunkForExistingItems(Chunk chunk) {
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
 
         if (hopper == null)
             return;
 
-        if (!hopper.shouldCollect(drop))
-            return;
+        Location hopperLoc = hopper.getLocation();
+        double hx = hopperLoc.getX() + 0.5;
+        double hz = hopperLoc.getZ() + 0.5;
+        double hy = hopperLoc.getY();
 
-        int realAmount;
-        if (plugin.getRoseStackerHook().isEnabled())
-            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
-        else
-            realAmount = drop.getAmount();
+        for (Entity entity : chunk.getEntities()) {
+            if (!(entity instanceof Item item))
+                continue;
 
-        if (realAmount != drop.getAmount()) {
-            drop = drop.clone();
-            drop.setAmount(realAmount);
+            if (item.isDead())
+                continue;
+
+            Location loc = item.getLocation();
+
+            if (Math.abs(loc.getX() - hx) > 1.5)
+                continue;
+
+            if (Math.abs(loc.getZ() - hz) > 1.5)
+                continue;
+
+            if (loc.getY() < hy + 0.5 || loc.getY() > hy + 2.0)
+                continue;
+
+            plugin.getChunkHopperManager().addPendingItem(item);
         }
-
-        List<Container> bottoms = hopper.getBottomContainers(plugin);
-
-        plugin.getLogger().info("[ACH] Collecting " + drop.getType() + " x" + realAmount
-                + " for hopper at " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
-                + " (containers: " + bottoms.size() + ", limit: " + hopper.getContainerLimit() + ")");
-
-        if (bottoms.isEmpty())
-            return;
-
-        ItemStack remaining = drop;
-
-        for (Container bottom : bottoms) {
-            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-
-            if (leftovers.isEmpty()) {
-                itemEntity.remove();
-                return;
-            }
-
-            remaining = leftovers.get(0);
-        }
-
-        if (!hopper.canFitItem(itemEntity, plugin)) {
-            hopper.notifyFull(plugin);
-            return;
-        }
-
-        Inventory mainInv = hopper.getMainInventory();
-        Map<Integer, ItemStack> leftovers = mainInv.addItem(remaining);
-
-        hopper.markDirty();
-
-        if (leftovers.isEmpty())
-            itemEntity.remove();
-        else
-            itemEntity.setItemStack(leftovers.get(0));
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -133,7 +84,7 @@ public class ChunkHopperListener implements Listener {
         if (hopper == null)
             return;
 
-        pendingItems.add(itemEntity);
+        plugin.getChunkHopperManager().addPendingItem(itemEntity);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -198,6 +149,12 @@ public class ChunkHopperListener implements Listener {
         plugin.getChunkHopperManager().registerHopper(chunk, hopperObj);
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
         plugin.getChunkHopperManager().addHopperCount(player.getUniqueId());
+
+        int delay = plugin.getConfigUtil().getPullerIntervalTicks();
+        if (delay > 0)
+            Bukkit.getScheduler().runTaskLater(plugin, () -> scanChunkForExistingItems(chunk), delay);
+        else
+            scanChunkForExistingItems(chunk);
 
         if (maxHoppers != -1) {
             int updatedCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
@@ -288,7 +245,10 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
-        plugin.getChunkHopperManager().loadFromChunkAsync(event.getChunk());
+        Chunk chunk = event.getChunk();
+        int delay = plugin.getConfigUtil().getPullerIntervalTicks();
+        plugin.getChunkHopperManager().loadFromChunkAsync(chunk, () ->
+                Bukkit.getScheduler().runTaskLater(plugin, () -> scanChunkForExistingItems(chunk), delay));
     }
 
     @EventHandler

@@ -10,7 +10,6 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -182,43 +181,6 @@ public class ChunkHopper {
 
     public boolean isDirty() {
         return dirty;
-    }
-
-    public boolean canFitItem(Item itemEntity, AdvancedChunkHoppers plugin) {
-        if (itemEntity == null)
-            return false;
-
-        ItemStack item = itemEntity.getItemStack();
-
-        if (item.getType() == Material.AIR)
-            return false;
-
-        int quantity = item.getAmount();
-
-        if (plugin.getRoseStackerHook().isEnabled())
-            quantity = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
-
-        int itemSlots = mainInventory.getSize() - 9;
-
-        for (int slot = 0; slot < itemSlots; slot++) {
-            ItemStack current = mainInventory.getItem(slot);
-
-            if (current == null || current.getType() == Material.AIR)
-                return true;
-
-            if (current.isSimilar(item)) {
-                int space = current.getMaxStackSize() - current.getAmount();
-
-                if (space > 0) {
-                    quantity -= space;
-
-                    if (quantity <= 0)
-                        return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     public boolean shouldCollect(ItemStack item) {

@@ -33,6 +33,8 @@ public class ChunkHopperManager {
 
     private final Set<Location> achHopperLocations = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    private static final int MAX_ITEMS_PER_TICK = 100;
+    private final Queue<Item> pendingItems = new ArrayDeque<>();
     private BukkitRunnable pullerTask;
 
     public ChunkHopperManager(AdvancedChunkHoppers plugin) {
@@ -49,16 +51,26 @@ public class ChunkHopperManager {
     }
 
     private void startPullingTask() {
+        if (pullerTask != null)
+            pullerTask.cancel();
+
         int interval = plugin.getConfigUtil().getPullerIntervalTicks();
 
         pullerTask = new BukkitRunnable() {
             @Override
             public void run() {
-                for (ChunkHopper hopper : chunkHoppers.values()) {
-                    if (hopper == null)
-                        continue;
+                int processed = 0;
 
-                    collectFromAbove(hopper);
+                while (processed < MAX_ITEMS_PER_TICK) {
+                    Item item = pendingItems.poll();
+
+                    if (item == null)
+                        return;
+
+                    if (item.isValid())
+                        collect(item);
+
+                    processed++;
                 }
             }
         };
@@ -66,113 +78,13 @@ public class ChunkHopperManager {
         pullerTask.runTaskTimer(plugin, interval, interval);
     }
 
-    private void collectFromAbove(ChunkHopper hopper) {
-        Location hopperLoc = hopper.getLocation();
-        if (hopperLoc.getWorld() == null || !hopperLoc.getChunk().isEntitiesLoaded()) return;
-
-        pushItemsDown(hopper);
-
-        Location scanCenter = hopperLoc.clone().add(0.5, 1.5, 0.5);
-        for (Entity entity : hopperLoc.getWorld().getNearbyEntities(scanCenter, 4, 4, 4,
-                e -> e instanceof Item it && it.isOnGround() && !it.isDead())) {
-
-            // make sure both on the same chunk
-            if (hopperLoc.getChunk().getX() != entity.getChunk().getX() && hopperLoc.getChunk().getZ() != entity.getChunk().getZ())
-                continue;
-
-            Item item = (Item) entity;
-            ItemStack drop = item.getItemStack();
-
-            int realAmount;
-            if (plugin.getRoseStackerHook().isEnabled())
-                realAmount = plugin.getRoseStackerHook().getStackedAmount(item);
-            else
-                realAmount = drop.getAmount();
-
-            if (realAmount != drop.getAmount()) {
-                drop = drop.clone();
-                drop.setAmount(realAmount);
-            }
-
-            if (!hopper.shouldCollect(drop))
-                continue;
-
-            List<Container> bottoms = getBottomContainers(hopper);
-
-            ItemStack remaining = drop;
-            boolean fullyDeposited = false;
-
-            for (Container bottom : bottoms) {
-                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-
-                if (leftovers.isEmpty()) {
-                    item.remove();
-                    hopper.markDirty();
-                    fullyDeposited = true;
-                    break;
-                }
-
-                remaining = leftovers.get(0);
-            }
-
-            if (fullyDeposited)
-                continue;
-
-            if (!hopper.canFitItem(item, plugin))
-                continue;
-
-            Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
-
-            if (leftovers.isEmpty())
-                item.remove();
-            else {
-                item.setItemStack(leftovers.get(0));
-                hopper.notifyFull(plugin);
-            }
-
-            hopper.markDirty();
-        }
+    public void reloadPullerTask() {
+        startPullingTask();
     }
 
-    public void pushItemsDown(ChunkHopper hopper) {
-        Inventory mainInv = hopper.getMainInventory();
-        int itemSlots = mainInv.getSize() - 9;
-
-        List<Container> bottoms = hopper.getBottomContainers(plugin);
-        if (bottoms.isEmpty()) return;
-
-        boolean changed = false;
-
-        for (int i = 0; i < itemSlots; i++) {
-            ItemStack item = mainInv.getItem(i);
-
-            if (item == null || item.getType() == Material.AIR)
-                continue;
-
-            ItemStack remaining = item.clone();
-
-            for (Container bottom : bottoms) {
-                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-
-                if (leftovers.isEmpty()) {
-                    remaining = null;
-                    break;
-                } else
-                    remaining = leftovers.get(0);
-            }
-
-            if (remaining == null || remaining.getAmount() < item.getAmount()) {
-                mainInv.setItem(i, remaining);
-                changed = true;
-            }
-        }
-
-        if (changed)
-            hopper.markDirty();
-    }
-
-    public List<Container> getBottomContainers(ChunkHopper hopper) {
-        return hopper.getBottomContainers(plugin);
+    public void addPendingItem(Item item) {
+        if (item != null)
+            pendingItems.add(item);
     }
 
     public boolean isFilterViewer(Location location, UUID viewerUUID) {
@@ -188,80 +100,113 @@ public class ChunkHopperManager {
         filterViewers.remove(location, viewerUUID);
     }
 
-    public void reloadPullerTask() {
-        if (pullerTask != null)
-            pullerTask.cancel();
-
-        startPullingTask();
-    }
-
     public void collectNearbyItems(ChunkHopper hopper) {
         Location loc = hopper.getLocation();
 
         if (loc.getWorld() == null)
             return;
 
-        Chunk chunk = loc.getChunk();
-
-        for (Entity entity : chunk.getEntities()) {
-            if (!(entity instanceof Item item)) continue;
-            if (item.isDead()) continue;
-
-            ItemStack drop = item.getItemStack();
-
-            if (!hopper.shouldCollect(drop))
+        for (Entity entity : loc.getChunk().getEntities()) {
+            if (!(entity instanceof Item item))
                 continue;
 
-            int realAmount;
-            if (plugin.getRoseStackerHook().isEnabled())
-                realAmount = plugin.getRoseStackerHook().getStackedAmount(item);
-            else
-                realAmount = drop.getAmount();
-
-            if (realAmount != drop.getAmount()) {
-                drop = drop.clone();
-                drop.setAmount(realAmount);
-            }
-
-            List<Container> bottoms = hopper.getBottomContainers(plugin);
-
-            if (bottoms.isEmpty())
-                return;
-
-            ItemStack remaining = drop;
-
-            for (Container bottom : bottoms) {
-                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-
-                if (leftovers.isEmpty()) {
-                    item.remove();
-                    hopper.markDirty();
-                    continue;
-                }
-
-                remaining = leftovers.get(0);
-            }
-
-            if (!hopper.canFitItem(item, plugin)) {
-                item.teleport(loc.clone().add(0, 1, 0));
-                hopper.notifyFull(plugin);
+            if (item.isDead())
                 continue;
-            }
 
-            Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
-
-            hopper.markDirty();
-
-            if (leftovers.isEmpty())
-                item.remove();
-            else {
-                item.setItemStack(leftovers.get(0));
-                hopper.notifyFull(plugin);
-            }
+            addPendingItem(item);
         }
     }
 
-    public void loadFromChunkAsync(Chunk chunk) {
+    private void collect(Item itemEntity) {
+        ItemStack drop = itemEntity.getItemStack();
+
+        Location location = itemEntity.getLocation();
+
+        ChunkHopper hopper = getChunkHopper(location.getChunk());
+
+        if (hopper == null)
+            return;
+
+        if (!hopper.shouldCollect(drop))
+            return;
+
+        int realAmount;
+        if (plugin.getRoseStackerHook().isEnabled())
+            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
+        else
+            realAmount = drop.getAmount();
+
+        if (realAmount != drop.getAmount()) {
+            drop = drop.clone();
+            drop.setAmount(realAmount);
+        }
+
+        List<Container> bottoms = hopper.getBottomContainers(plugin);
+
+        if (bottoms.isEmpty())
+            return;
+
+        ItemStack remaining = drop;
+
+        for (Container bottom : bottoms) {
+            if (!hasSpaceFor(bottom.getInventory(), remaining))
+                continue;
+
+            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+            if (leftovers.isEmpty()) {
+                itemEntity.remove();
+                return;
+            }
+
+            remaining = leftovers.get(0);
+        }
+
+        int beforeAmount = remaining.getAmount();
+        Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
+
+        if (leftovers.isEmpty()) {
+            itemEntity.remove();
+            hopper.markDirty();
+            return;
+        }
+
+        ItemStack leftover = leftovers.get(0);
+        if (leftover.getAmount() == beforeAmount) {
+            hopper.notifyFull(plugin);
+            return;
+        }
+
+        itemEntity.setItemStack(leftover);
+        hopper.markDirty();
+    }
+
+    private static boolean hasSpaceFor(Inventory inv, ItemStack item) {
+        int needed = item.getAmount();
+        int maxStack = item.getMaxStackSize();
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack slot = inv.getItem(i);
+
+            if (slot == null || slot.getType() == Material.AIR)
+                return true;
+
+            if (slot.isSimilar(item)) {
+                int space = maxStack - slot.getAmount();
+
+                if (space > 0) {
+                    needed -= space;
+
+                    if (needed <= 0)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public void loadFromChunkAsync(Chunk chunk, Runnable afterRegister) {
         if (hasHopper(chunk))
             return;
 
@@ -276,6 +221,8 @@ public class ChunkHopperManager {
                     recalculateLimit(hopper);
                     registerHopper(chunk, hopper);
                     plugin.getCacheManager().putIfAbsent(location, hopper);
+                    if (afterRegister != null)
+                        afterRegister.run();
                 });
             }
         });
@@ -475,5 +422,7 @@ public class ChunkHopperManager {
 
         if (pullerTask != null)
             pullerTask.cancel();
+
+        pendingItems.clear();
     }
 }
