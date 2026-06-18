@@ -18,6 +18,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -31,8 +32,11 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.*;
 
 public class ChunkHopperListener implements Listener {
+    // TODO configurable?
     private static final int MAX_ITEMS_PER_TICK = 100;
+
     private final Queue<Item> pendingItems = new ArrayDeque<>();
+
     private final AdvancedChunkHoppers plugin;
 
     public ChunkHopperListener(AdvancedChunkHoppers plugin) {
@@ -68,8 +72,6 @@ public class ChunkHopperListener implements Listener {
         if (!hopper.shouldCollect(drop))
             return;
 
-        System.out.println("should collect yes");
-
         int realAmount;
         if (plugin.getRoseStackerHook().isEnabled())
             realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
@@ -81,14 +83,10 @@ public class ChunkHopperListener implements Listener {
             drop.setAmount(realAmount);
         }
 
-        System.out.println("amount: " + realAmount);
-
         List<Container> bottoms = plugin.getChunkHopperManager().getBottomContainers(hopper);
 
         if (bottoms.isEmpty())
             return;
-
-        System.out.println("not empty");
 
         ItemStack remaining = drop;
 
@@ -132,16 +130,6 @@ public class ChunkHopperListener implements Listener {
         if (hopper == null)
             return;
 
-        Location hopperLoc = hopper.getLocation();
-        if (location.getWorld().equals(hopperLoc.getWorld()) &&
-                location.getBlockX() == hopperLoc.getBlockX() &&
-                location.getBlockY() == hopperLoc.getBlockY() + 1 &&
-                location.getBlockZ() == hopperLoc.getBlockZ())
-            return;
-
-        if (plugin.getChunkHopperManager().getActiveGuiLocations().contains(hopperLoc))
-            return;
-
         pendingItems.add(itemEntity);
     }
 
@@ -153,7 +141,6 @@ public class ChunkHopperListener implements Listener {
             return;
 
         Player player = event.getPlayer();
-
         Block against = event.getBlockAgainst();
 
         if (block.getY() - against.getY() != 1) {
@@ -287,6 +274,11 @@ public class ChunkHopperListener implements Listener {
 
             plugin.sendMessage(player, Messages.HOPPERS_NOW.replace("count", String.valueOf(currentCount)));
         }
+    }
+
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(block -> block.getType() == Material.HOPPER && plugin.getChunkHopperManager().isACHLocation(block.getLocation()));
     }
 
     @EventHandler
