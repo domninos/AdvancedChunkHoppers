@@ -183,15 +183,22 @@ public class ConfigUtil {
                     continue;
 
                 if (!limitsSection.isInt(group)) {
-                    plugin.sendConsole("<yellow>Limits for '" + group + "' is not an integer. Skipping..</yellow>");
+                    plugin.sendConsole("<yellow>Limit for '" + group + "' is not an integer. Skipping..</yellow>");
                     continue;
                 }
 
-                int limit = limitsSection.getInt(group);
+                String lower = group.toLowerCase();
+                if (limitsMap.containsKey(lower))
+                    plugin.sendConsole("<yellow>Duplicate limit entry for group '" + group + "' in config.yml. Using value " + limitsSection.getInt(group) + ".</yellow>");
 
-                // the group settings
-                limitsMap.put(group.toLowerCase(), limit);
+                limitsMap.put(lower, limitsSection.getInt(group));
             }
+        }
+
+        if (limitsMap.isEmpty()) {
+            limitsMap.put("knight", 2);
+            limitsMap.put("lord", 4);
+            plugin.sendConsole("<yellow>No limits found in config.yml. Using defaults: knight=2, lord=4</yellow>");
         }
 
         ConfigurationSection hoppersSection = plugin.getConfig().getConfigurationSection("hoppers_placed_limits");
@@ -206,8 +213,18 @@ public class ConfigUtil {
                     continue;
                 }
 
-                hoppersPlacedLimitsMap.put(group.toLowerCase(), hoppersSection.getInt(group));
+                String lower = group.toLowerCase();
+                if (hoppersPlacedLimitsMap.containsKey(lower))
+                    plugin.sendConsole("<yellow>Duplicate hoppers_placed_limits entry for group '" + group + "' in config.yml. Using value " + hoppersSection.getInt(group) + ".</yellow>");
+
+                hoppersPlacedLimitsMap.put(lower, hoppersSection.getInt(group));
             }
+        }
+
+        if (hoppersPlacedLimitsMap.isEmpty()) {
+            hoppersPlacedLimitsMap.put("knight", 5);
+            hoppersPlacedLimitsMap.put("lord", 10);
+            plugin.sendConsole("<yellow>No hoppers_placed_limits found in config.yml. Using defaults: knight=5, lord=10</yellow>");
         }
 
         if (savedDefaults.get() > 0) {
