@@ -89,7 +89,7 @@ public class MessageUtil {
         if (aliases != null && aliases.length > 0)
             builder.append("  <white> <italic>⤷ Aliases: ")
                     .append(Arrays.toString(aliases))
-                    .append("</italic></white>");
+                    .append("</italic></white>\n");
 
         return builder.toString();
     }

@@ -48,7 +48,8 @@ public class ACHCommand implements CommandExecutor {
                 plugin.getChunkHopperManager().reloadPullerTask();
 
                 if (restartNeeded)
-                    plugin.sendMessage(sender, getMessages() + "\n<gray>Note: Inventory size/title changes require a server restart for existing hoppers.</gray>");
+                    plugin.sendMessage(sender, Messages.RELOADED
+                            + "\n<gray>Note: Inventory size/title changes require a server restart for existing hoppers.</gray>");
                 else
                     plugin.sendMessage(sender, Messages.RELOADED.toString());
             } else if (args[0].equalsIgnoreCase("about"))
@@ -63,16 +64,12 @@ public class ACHCommand implements CommandExecutor {
         return true;
     }
 
-    private @org.jspecify.annotations.NonNull Messages getMessages() {
-        return Messages.RELOADED;
-    }
-
     private void sendHelp(CommandSender sender) {
         StringBuilder helpBuilder = new StringBuilder();
 
         // header
         helpBuilder.append("\n<dark_gray>▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪</dark_gray>\n");
-        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>\n");
+        helpBuilder.append("  <gradient:#00AAFF:#55FFFF><bold>AdvancedChunkHoppers</bold></gradient> <gray>\n\n");
 
         if (sender.hasPermission("ach.use")) {
             helpBuilder.append(MessageUtil.formatString("ach", "Base command for AdvancedChunkHoppers.", "ach"));
