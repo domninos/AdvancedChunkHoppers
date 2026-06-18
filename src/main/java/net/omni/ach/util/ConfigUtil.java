@@ -71,6 +71,8 @@ public class ConfigUtil {
         int oldBlacklistSize = blacklist_inventory_size;
         String oldBlacklistTitle = blacklist_inventory_title;
 
+        flush();
+
         plugin.reloadConfig();
         load();
 
