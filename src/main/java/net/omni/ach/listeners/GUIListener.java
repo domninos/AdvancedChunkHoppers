@@ -126,7 +126,6 @@ public class GUIListener implements Listener {
 
                 if (moved != null && moved.getType() != Material.AIR) {
                     if (hopper.isInOtherFilter(type, moved)) {
-                        event.setCurrentItem(null);
                         plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
                         return;
                     }
@@ -149,6 +148,13 @@ public class GUIListener implements Listener {
 
                 }
 
+                return;
+            }
+
+            ItemStack moved = event.getCurrentItem();
+
+            if (moved != null && moved.getType() != Material.AIR && hopper.isInOtherFilter(type, moved)) {
+                plugin.sendMessage(player, Messages.FILTER_CONFLICT.toString());
                 return;
             }
 
