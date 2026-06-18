@@ -97,6 +97,58 @@ public class ChunkHopperManager {
         pullerTask.runTaskTimer(plugin, interval, interval);
     }
 
+    @Nullable
+    public ItemStack depositToHopper(ChunkHopper hopper, ItemStack drop) {
+        if (drop == null || drop.getType() == Material.AIR || !hopper.shouldCollect(drop))
+            return drop;
+
+        List<Container> bottoms = hopper.getBottomContainers(plugin);
+
+        if (bottoms.isEmpty())
+            return drop;
+
+        ItemStack remaining = drop;
+
+        for (Container bottom : bottoms) {
+            if (!hasSpaceFor(bottom.getInventory(), remaining))
+                continue;
+
+            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+
+            if (leftovers.isEmpty()) {
+                hopper.markDirty();
+                pushItemsDown(hopper);
+                bottoms.clear();
+                return null;
+            }
+
+            remaining = leftovers.get(0);
+        }
+
+        int beforeAmount = remaining.getAmount();
+        Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
+
+        if (leftovers.isEmpty()) {
+            hopper.markDirty();
+            pushItemsDown(hopper);
+            bottoms.clear();
+            return null;
+        }
+
+        ItemStack leftover = leftovers.get(0);
+
+        if (leftover.getAmount() == beforeAmount) {
+            hopper.notifyFull(plugin);
+            bottoms.clear();
+            return drop;
+        }
+
+        hopper.markDirty();
+        pushItemsDown(hopper);
+        bottoms.clear();
+        return leftover;
+    }
+
     private void collect(Item itemEntity) {
         ItemStack drop = itemEntity.getItemStack();
 
@@ -105,9 +157,6 @@ public class ChunkHopperManager {
         ChunkHopper hopper = getChunkHopper(location.getChunk());
 
         if (hopper == null)
-            return;
-
-        if (!hopper.shouldCollect(drop))
             return;
 
         int realAmount;
@@ -121,49 +170,13 @@ public class ChunkHopperManager {
             drop.setAmount(realAmount);
         }
 
-        List<Container> bottoms = hopper.getBottomContainers(plugin);
+        ItemStack leftover = depositToHopper(hopper, drop);
 
-        if (bottoms.isEmpty())
-            return;
-
-        ItemStack remaining = drop;
-
-        for (Container bottom : bottoms) {
-            if (!hasSpaceFor(bottom.getInventory(), remaining))
-                continue;
-
-            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
-
-            if (leftovers.isEmpty()) {
-                itemEntity.remove();
-                return;
-            }
-
-            remaining = leftovers.get(0);
-        }
-
-        int beforeAmount = remaining.getAmount();
-        Map<Integer, ItemStack> leftovers = hopper.getMainInventory().addItem(remaining);
-
-        if (leftovers.isEmpty()) {
+        if (leftover == null) {
             itemEntity.remove();
-            hopper.markDirty();
-            pushItemsDown(hopper);
-            return;
+        } else if (leftover.getAmount() < drop.getAmount()) {
+            itemEntity.setItemStack(leftover);
         }
-
-        ItemStack leftover = leftovers.get(0);
-        if (leftover.getAmount() == beforeAmount) {
-            hopper.notifyFull(plugin);
-            return;
-        }
-
-        itemEntity.setItemStack(leftover);
-        hopper.markDirty();
-
-        pushItemsDown(hopper);
-
-        bottoms.clear();
     }
 
     @Nullable

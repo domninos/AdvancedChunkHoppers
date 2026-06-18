@@ -18,6 +18,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
@@ -30,6 +31,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -224,6 +226,32 @@ public class ChunkHopperListener implements Listener {
             if (currentCount < 0) currentCount = 0;
 
             plugin.sendMessage(player, Messages.HOPPERS_NOW.replace("count", String.valueOf(currentCount)));
+        }
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        Location location = event.getEntity().getLocation();
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(location.getChunk());
+
+        if (hopper == null)
+            return;
+
+        Iterator<ItemStack> it = event.getDrops().iterator();
+
+        while (it.hasNext()) {
+            ItemStack drop = it.next();
+
+            if (drop == null || drop.getType() == Material.AIR)
+                continue;
+
+            ItemStack leftover = plugin.getChunkHopperManager().depositToHopper(hopper, drop);
+
+            if (leftover == null) {
+                it.remove();
+            } else if (leftover.getAmount() < drop.getAmount()) {
+                drop.setAmount(leftover.getAmount());
+            }
         }
     }
 
