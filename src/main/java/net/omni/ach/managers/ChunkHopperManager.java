@@ -42,7 +42,6 @@ public class ChunkHopperManager {
         this.ownerKey = new NamespacedKey(plugin, "chunk_hopper_owner");
     }
 
-
     public void init() {
         startPullingTask();
     }

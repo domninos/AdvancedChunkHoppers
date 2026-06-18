@@ -16,7 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
@@ -28,7 +29,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class ChunkHopperListener implements Listener {
 
@@ -36,39 +39,6 @@ public class ChunkHopperListener implements Listener {
 
     public ChunkHopperListener(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
-    }
-
-    public void scanChunkForExistingItems(Chunk chunk) {
-        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
-
-        if (hopper == null)
-            return;
-
-        Location hopperLoc = hopper.getLocation();
-        double hx = hopperLoc.getX() + 0.5;
-        double hz = hopperLoc.getZ() + 0.5;
-        double hy = hopperLoc.getY();
-
-        for (Entity entity : chunk.getEntities()) {
-            if (!(entity instanceof Item item))
-                continue;
-
-            if (item.isDead())
-                continue;
-
-            Location loc = item.getLocation();
-
-            if (Math.abs(loc.getX() - hx) > 1.5)
-                continue;
-
-            if (Math.abs(loc.getZ() - hz) > 1.5)
-                continue;
-
-            if (loc.getY() < hy + 0.5 || loc.getY() > hy + 2.0)
-                continue;
-
-            plugin.getChunkHopperManager().addPendingItem(item);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -163,6 +133,26 @@ public class ChunkHopperListener implements Listener {
                     "remaining", String.valueOf(maxHoppers - updatedCount),
                     "max", String.valueOf(maxHoppers)
             ));
+        }
+    }
+
+    public void scanChunkForExistingItems(Chunk chunk) {
+        if (!chunk.isLoaded() && !chunk.isEntitiesLoaded())
+            return;
+
+        ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
+
+        if (hopper == null)
+            return;
+
+        for (Entity entity : chunk.getEntities()) {
+            if (!(entity instanceof Item item))
+                continue;
+
+            if (item.isDead())
+                continue;
+
+            plugin.getChunkHopperManager().addPendingItem(item);
         }
     }
 
