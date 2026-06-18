@@ -8,6 +8,7 @@ import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
 import net.omni.ach.hooks.LuckPermsHook;
 import net.omni.ach.hooks.RoseStackerHook;
+import net.omni.ach.listeners.BottomContainerListener;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
 import net.omni.ach.managers.CacheManager;
@@ -121,6 +122,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     private void registerListeners() {
         new ChunkHopperListener(this).register();
+        new BottomContainerListener(this).register();
         new GUIListener(this).register();
     }
 
