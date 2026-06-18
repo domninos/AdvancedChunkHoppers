@@ -16,8 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
@@ -83,7 +82,11 @@ public class ChunkHopperListener implements Listener {
             drop.setAmount(realAmount);
         }
 
-        List<Container> bottoms = plugin.getChunkHopperManager().getBottomContainers(hopper);
+        List<Container> bottoms = hopper.getBottomContainers(plugin);
+
+        plugin.getLogger().info("[ACH] Collecting " + drop.getType() + " x" + realAmount
+                + " for hopper at " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
+                + " (containers: " + bottoms.size() + ", limit: " + hopper.getContainerLimit() + ")");
 
         if (bottoms.isEmpty())
             return;
@@ -190,6 +193,7 @@ public class ChunkHopperListener implements Listener {
         hopper.update(true, false);
 
         ChunkHopper hopperObj = new ChunkHopper(block.getLocation(), player.getUniqueId(), plugin);
+        plugin.getChunkHopperManager().recalculateLimit(hopperObj);
         Chunk chunk = block.getChunk();
         plugin.getChunkHopperManager().registerHopper(chunk, hopperObj);
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
@@ -278,7 +282,8 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {
-        event.blockList().removeIf(block -> block.getType() == Material.HOPPER && plugin.getChunkHopperManager().isACHLocation(block.getLocation()));
+        event.blockList().removeIf(block ->
+                block.getType() == Material.HOPPER && plugin.getChunkHopperManager().isACHLocation(block.getLocation()));
     }
 
     @EventHandler
@@ -296,6 +301,7 @@ public class ChunkHopperListener implements Listener {
         ChunkHopper hopper = plugin.getChunkHopperManager().getChunkHopper(chunk);
 
         if (hopper != null) {
+            hopper.invalidateBottomContainerCache();
             hopper.save(plugin);
             plugin.getCacheManager().invalidate(hopper.getLocation());
         }
