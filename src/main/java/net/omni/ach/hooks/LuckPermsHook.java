@@ -11,20 +11,25 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 
 public class LuckPermsHook {
 
-    private final EventSubscription<UserDataRecalculateEvent> subscription;
+    private final AdvancedChunkHoppers plugin;
+    private EventSubscription<UserDataRecalculateEvent> subscription;
 
     public LuckPermsHook(AdvancedChunkHoppers plugin) {
+        this.plugin = plugin;
+    }
+
+    public void init() {
         RegisteredServiceProvider<LuckPerms> provider =
                 Bukkit.getServicesManager().getRegistration(LuckPerms.class);
 
         if (provider == null) {
-            subscription = null;
+            this.subscription = null;
             return;
         }
 
         LuckPerms api = provider.getProvider();
 
-        subscription = api.getEventBus().subscribe(
+        this.subscription = api.getEventBus().subscribe(
                 plugin,
                 UserDataRecalculateEvent.class,
                 event -> {
@@ -48,8 +53,11 @@ public class LuckPermsHook {
     }
 
     public void unregister() {
-        if (subscription != null) {
+        if (isEnabled())
             subscription.close();
-        }
+    }
+
+    public boolean isEnabled() {
+        return this.subscription != null;
     }
 }

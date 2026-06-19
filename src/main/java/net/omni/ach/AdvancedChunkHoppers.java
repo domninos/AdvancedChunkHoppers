@@ -102,6 +102,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         this.roseStackerHook = new RoseStackerHook();
         this.gangsPlusHook = new GangsPlusHook();
         this.customCraftingHook = new CustomCraftingHook();
+        this.luckPermsHook = new LuckPermsHook(this);
 
         if (Bukkit.getPluginManager().isPluginEnabled("GangsPlus")) {
             this.gangsPlusHook.init();
@@ -119,7 +120,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         }
 
         if (Bukkit.getPluginManager().isPluginEnabled("LuckPerms")) {
-            this.luckPermsHook = new LuckPermsHook(this);
+            this.luckPermsHook.init();
             sendConsole("<green>Successfully hooked into LuckPerms!</green>");
         }
     }
