@@ -39,7 +39,7 @@ public class MessagesManager {
         }
 
         if (savedDefaults > 0) {
-            plugin.saveConfig();
+            plugin.getMessagesConfig().save();
 
             plugin.sendConsole("<green>Successfully loaded " + savedDefaults + " default message(s).</green>");
         }
