@@ -7,8 +7,12 @@ public enum Messages {
     NO_PERMS("no_perms", "<red>You do not have permission to use this command.</red>"),
     ONLY_PLAYERS("only_players", "<red>Only players can use this command.</red>"),
 
+    PLAYER_NOT_FOUND("player_not_found", "<red>Player %player% not found.</red>"),
     USAGE("usage", "<red>Invalid arguments. Usage: %usage%</red>"),
     UNKNOWN_COMMAND("unknown_cmd", "<red>Unknown command.</red>"),
+
+    GIVE_SUCCESS("give_success", "<green>Successfully gave %player% a chunk hopper."),
+    GIVE_ERROR("give.error", "<red>Could not give %player% a chunk hopper. Please check logs.</red>"),
 
     RELOADED("reloaded", "<green>config.yml and messages.yml have been reloaded.</green>"),
 

@@ -1,9 +1,12 @@
 no_perms: "<red>You do not have permission to use this command.</red>"
 only_players: "<red>Only players can use this command.</red>"
 
+player_not_found: "<red>Player %player% not found.</player>"
 usage: "<red>Invalid arguments. Usage: %usage%</red>"
 unknown_cmd: "<red>Unknown command.</red>"
 
+give_success: "<green>Successfully gave %player% a chunk hopper.</green>"
+give_error: "<red>Could not give %player% a chunk hopper. Please check logs.</red>"
 reloaded: "<green>config.yml and messages.yml have been reloaded.</green>"
 
 hopper_face_down: "<red>Chunk Hopper must be placed facing down.</red>"
