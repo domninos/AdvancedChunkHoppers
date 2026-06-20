@@ -107,19 +107,10 @@ public class ChunkHopperListener implements Listener {
                 player.getUniqueId().toString()
         );
 
-        pdc.set(
-                plugin.getChunkHopperManager().getAchKey(),
-                PersistentDataType.BYTE,
-                (byte) 1
-        );
-
         hopper.update(true, false);
 
         ChunkHopper hopperObj = new ChunkHopper(block.getLocation(), player.getUniqueId(), plugin);
         plugin.getChunkHopperManager().recalculateLimit(hopperObj);
-
-
-        // TODO automatically check if the block underneath is a chest
 
         Chunk chunk = block.getChunk();
 
@@ -132,6 +123,16 @@ public class ChunkHopperListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> scanChunkForExistingItems(chunk), delay);
         else
             scanChunkForExistingItems(chunk);
+
+
+        if (plugin.getConfigUtil().getContainerMaterials().contains(against.getType())) {
+            // is a container -> try to suck
+
+            ChunkHopper chunkHopper = plugin.getChunkHopperManager().invalidateChainAbove(against);
+
+            if (chunkHopper != null)
+                plugin.getChunkHopperManager().collectItemsInChunk(hopper.getLocation().getChunk());
+        }
 
         if (maxHoppers != -1) {
             int updatedCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
