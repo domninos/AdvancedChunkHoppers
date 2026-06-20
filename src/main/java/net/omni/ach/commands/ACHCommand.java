@@ -55,7 +55,7 @@ public class ACHCommand implements CommandExecutor {
                 else
                     plugin.sendMessage(sender, Messages.RELOADED.toString());
             } else if (args[0].equalsIgnoreCase("about"))
-                plugin.sendMessage(sender, getAboutText());
+                sender.sendMessage(MessageUtil.parse(getAboutText()));
             else if (args[0].equalsIgnoreCase("give"))
                 plugin.sendMessage(sender, Messages.USAGE.replace("usage", "/ach give (player) [amount]"));
             else
