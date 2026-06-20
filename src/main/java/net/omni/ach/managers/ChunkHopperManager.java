@@ -97,6 +97,48 @@ public class ChunkHopperManager {
         pullerTask.runTaskTimer(plugin, interval, interval);
     }
 
+    private void collect(Item itemEntity) {
+        ItemStack drop = itemEntity.getItemStack();
+
+        Location location = itemEntity.getLocation();
+
+        ChunkHopper hopper = getChunkHopper(location.getChunk());
+
+        if (hopper == null)
+            return;
+
+        int realAmount;
+        if (plugin.getRoseStackerHook().isEnabled())
+            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
+        else
+            realAmount = drop.getAmount();
+
+        if (realAmount != drop.getAmount()) {
+            drop = drop.clone();
+            drop.setAmount(realAmount);
+        }
+
+        ItemStack leftover = depositToHopper(hopper, drop);
+
+        if (leftover == null) {
+            itemEntity.remove();
+        } else if (leftover.getAmount() < drop.getAmount()) {
+            itemEntity.setItemStack(leftover);
+        }
+    }
+
+    @Nullable
+    public ChunkHopper getChunkHopper(Chunk chunk) {
+        ChunkHopper hopper = chunkHoppers.get(chunkKey(chunk));
+
+        if (hopper == null) {
+            unregisterHopper(chunk);
+            return null;
+        }
+
+        return hopper;
+    }
+
     @Nullable
     public ItemStack depositToHopper(ChunkHopper hopper, ItemStack drop) {
         if (drop == null || drop.getType() == Material.AIR || !hopper.shouldCollect(drop))
@@ -149,46 +191,15 @@ public class ChunkHopperManager {
         return leftover;
     }
 
-    private void collect(Item itemEntity) {
-        ItemStack drop = itemEntity.getItemStack();
-
-        Location location = itemEntity.getLocation();
-
-        ChunkHopper hopper = getChunkHopper(location.getChunk());
-
-        if (hopper == null)
-            return;
-
-        int realAmount;
-        if (plugin.getRoseStackerHook().isEnabled())
-            realAmount = plugin.getRoseStackerHook().getStackedAmount(itemEntity);
-        else
-            realAmount = drop.getAmount();
-
-        if (realAmount != drop.getAmount()) {
-            drop = drop.clone();
-            drop.setAmount(realAmount);
-        }
-
-        ItemStack leftover = depositToHopper(hopper, drop);
-
-        if (leftover == null) {
-            itemEntity.remove();
-        } else if (leftover.getAmount() < drop.getAmount()) {
-            itemEntity.setItemStack(leftover);
-        }
+    private static String chunkKey(Chunk chunk) {
+        return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
     }
 
-    @Nullable
-    public ChunkHopper getChunkHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.get(chunkKey(chunk));
+    public void unregisterHopper(Chunk chunk) {
+        ChunkHopper hopper = chunkHoppers.remove(chunkKey(chunk));
 
-        if (hopper == null) {
-            unregisterHopper(chunk);
-            return null;
-        }
-
-        return hopper;
+        if (hopper != null)
+            achHopperLocations.remove(hopper.getLocation());
     }
 
     private static boolean hasSpaceFor(Inventory inv, ItemStack item) {
@@ -256,17 +267,6 @@ public class ChunkHopperManager {
 
         if (changed)
             hopper.markDirty();
-    }
-
-    private static String chunkKey(Chunk chunk) {
-        return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
-    }
-
-    public void unregisterHopper(Chunk chunk) {
-        ChunkHopper hopper = chunkHoppers.remove(chunkKey(chunk));
-
-        if (hopper != null)
-            achHopperLocations.remove(hopper.getLocation());
     }
 
     public void reloadPullerTask() {
