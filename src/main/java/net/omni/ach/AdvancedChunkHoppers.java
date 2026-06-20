@@ -101,7 +101,7 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     private void registerHooks() {
         this.roseStackerHook = new RoseStackerHook();
         this.gangsPlusHook = new GangsPlusHook();
-        this.customCraftingHook = new CustomCraftingHook();
+        this.customCraftingHook = new CustomCraftingHook(this);
         this.luckPermsHook = new LuckPermsHook(this);
 
         if (Bukkit.getPluginManager().isPluginEnabled("GangsPlus")) {
