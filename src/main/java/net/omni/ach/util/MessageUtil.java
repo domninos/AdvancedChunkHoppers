@@ -30,7 +30,7 @@ public class MessageUtil {
 
         builder.append("  <#00AAFF>/")
                 .append(command)
-                .append("</#00AAFF> <dark_gray>-</dark_gray> <gray> ")
+                .append("</#00AAFF> <dark_gray>-</dark_gray> <gray>")
                 .append(description)
                 .append("</gray>")
                 .append("\n");
