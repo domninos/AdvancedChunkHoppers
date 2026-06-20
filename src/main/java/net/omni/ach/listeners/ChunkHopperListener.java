@@ -85,7 +85,6 @@ public class ChunkHopperListener implements Listener {
         int maxHoppers = plugin.getChunkHopperManager().getMaxHoppers(player);
 
         if (maxHoppers != -1) {
-
             if (current >= maxHoppers) {
                 event.setCancelled(true);
                 plugin.sendMessage(player, Messages.MAX_HOPPERS_REACHED.toString());
@@ -118,7 +117,12 @@ public class ChunkHopperListener implements Listener {
 
         ChunkHopper hopperObj = new ChunkHopper(block.getLocation(), player.getUniqueId(), plugin);
         plugin.getChunkHopperManager().recalculateLimit(hopperObj);
+
+
+        // TODO automatically check if the block underneath is a chest
+
         Chunk chunk = block.getChunk();
+
         plugin.getChunkHopperManager().registerHopper(chunk, hopperObj);
         plugin.getCacheManager().putIfAbsent(block.getLocation(), hopperObj);
         plugin.getChunkHopperManager().addHopperCount(player.getUniqueId());
