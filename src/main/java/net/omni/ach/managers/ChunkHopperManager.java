@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChunkHopperManager {
     private static final int MAX_ITEMS_PER_TICK = 100;
+    private static final int MAX_CHAIN_HEIGHT = 20;
 
     private final NamespacedKey ach_key;
     private final NamespacedKey containerLimitKey;
@@ -269,6 +270,60 @@ public class ChunkHopperManager {
             hopper.markDirty();
     }
 
+
+    @Nullable
+    public ChunkHopper invalidateChainAbove(Block block) {
+        if (!isContainerMat(block))
+            return null;
+
+        Block current = block.getRelative(0, 1, 0);
+
+        for (int i = 0; i < MAX_CHAIN_HEIGHT; i++) {
+            ChunkHopper result = tryInvalidateACH(current);
+
+            if (result != null)
+                return result;
+
+            for (int[] o : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                result = tryInvalidateACH(current.getRelative(o[0], 0, o[1]));
+
+                if (result != null)
+                    return result;
+            }
+
+            if (!isContainerMat(current))
+                return null;
+
+            current = current.getRelative(0, 1, 0);
+        }
+
+        return null;
+    }
+
+    public boolean isContainerMat(Block block) {
+        return plugin.getConfigUtil().getContainerMaterials().contains(block.getType());
+    }
+
+
+    @Nullable
+    public ChunkHopper tryInvalidateACH(Block block) {
+        if (!plugin.getChunkHopperManager().isACHLocation(block.getLocation()))
+            return null;
+
+        ChunkHopper hopper = plugin.getCacheManager().getCachedHopper(block.getLocation());
+
+        if (hopper != null) {
+            hopper.invalidateBottomContainerCache();
+            plugin.getChunkHopperManager().pushItemsDown(hopper);
+        }
+
+        return hopper;
+    }
+
+    public boolean isACHLocation(Location location) {
+        return achHopperLocations.contains(location);
+    }
+
     public void reloadPullerTask() {
         startPullingTask();
     }
@@ -418,7 +473,7 @@ public class ChunkHopperManager {
 
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
 
-        return pdc.has(ach_key);
+        return pdc.has(ownerKey, PersistentDataType.STRING);
     }
 
     private void storeContainerLimit(Block hopperBlock, int maxLimit) {
@@ -438,10 +493,6 @@ public class ChunkHopperManager {
         Integer limit = pdc.get(containerLimitKey, PersistentDataType.INTEGER);
 
         return limit != null ? limit : 0;
-    }
-
-    public boolean isACHLocation(Location location) {
-        return achHopperLocations.contains(location);
     }
 
     public int getMaxHoppers(Player player) {

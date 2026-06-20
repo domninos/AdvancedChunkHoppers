@@ -13,13 +13,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 
 public class BottomContainerListener implements Listener {
-
-    private static final int MAX_CHAIN_HEIGHT = 20;
 
     private final AdvancedChunkHoppers plugin;
 
@@ -31,10 +28,10 @@ public class BottomContainerListener implements Listener {
     public void onContainerBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
 
-        if (!isContainerMat(block))
+        if (!plugin.getChunkHopperManager().isContainerMat(block))
             return;
 
-        ChunkHopper hopper = invalidateChainAbove(block);
+        ChunkHopper hopper = plugin.getChunkHopperManager().invalidateChainAbove(block);
 
         if (hopper != null) {
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -46,62 +43,14 @@ public class BottomContainerListener implements Listener {
         }
     }
 
-    private boolean isContainerMat(Block block) {
-        return plugin.getConfigUtil().getContainerMaterials().contains(block.getType());
-    }
-
-    @Nullable
-    private ChunkHopper invalidateChainAbove(Block block) {
-        if (!isContainerMat(block))
-            return null;
-
-        Block current = block.getRelative(0, 1, 0);
-
-        for (int i = 0; i < MAX_CHAIN_HEIGHT; i++) {
-            ChunkHopper result = tryInvalidateACH(current);
-
-            if (result != null)
-                return result;
-
-            for (int[] o : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-                result = tryInvalidateACH(current.getRelative(o[0], 0, o[1]));
-
-                if (result != null)
-                    return result;
-            }
-
-            if (!isContainerMat(current))
-                return null;
-
-            current = current.getRelative(0, 1, 0);
-        }
-
-        return null;
-    }
-
-    @Nullable
-    private ChunkHopper tryInvalidateACH(Block block) {
-        if (!plugin.getChunkHopperManager().isACHLocation(block.getLocation()))
-            return null;
-
-        ChunkHopper hopper = plugin.getCacheManager().getCachedHopper(block.getLocation());
-
-        if (hopper != null) {
-            hopper.invalidateBottomContainerCache();
-            plugin.getChunkHopperManager().pushItemsDown(hopper);
-        }
-
-        return hopper;
-    }
-
     @EventHandler(ignoreCancelled = true)
     public void onContainerPlace(BlockPlaceEvent event) {
         Block block = event.getBlockPlaced();
 
-        if (!isContainerMat(block))
+        if (!plugin.getChunkHopperManager().isContainerMat(block))
             return;
 
-        ChunkHopper hopper = invalidateChainAbove(block);
+        ChunkHopper hopper = plugin.getChunkHopperManager().invalidateChainAbove(block);
 
         if (hopper != null)
             plugin.getChunkHopperManager().collectItemsInChunk(hopper.getLocation().getChunk());
@@ -112,11 +61,11 @@ public class BottomContainerListener implements Listener {
         BlockFace dir = event.getDirection();
 
         for (Block b : event.getBlocks()) {
-            if (!isContainerMat(b))
+            if (!plugin.getChunkHopperManager().isContainerMat(b))
                 continue;
 
-            invalidateChainAbove(b);
-            invalidateChainAbove(b.getRelative(dir));
+            plugin.getChunkHopperManager().invalidateChainAbove(b);
+            plugin.getChunkHopperManager().invalidateChainAbove(b.getRelative(dir));
         }
     }
 
@@ -125,19 +74,19 @@ public class BottomContainerListener implements Listener {
         BlockFace dir = event.getDirection().getOppositeFace();
 
         for (Block b : event.getBlocks()) {
-            if (!isContainerMat(b))
+            if (!plugin.getChunkHopperManager().isContainerMat(b))
                 continue;
 
-            invalidateChainAbove(b);
-            invalidateChainAbove(b.getRelative(dir));
+            plugin.getChunkHopperManager().invalidateChainAbove(b);
+            plugin.getChunkHopperManager().invalidateChainAbove(b.getRelative(dir));
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent event) {
         Block block = event.getBlock();
-        if (isContainerMat(block))
-            invalidateChainAbove(block);
+        if (plugin.getChunkHopperManager().isContainerMat(block))
+            plugin.getChunkHopperManager().invalidateChainAbove(block);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -145,8 +94,8 @@ public class BottomContainerListener implements Listener {
         Block block = event.getBlock();
         Material to = event.getTo();
 
-        if (isContainerMat(block) || plugin.getConfigUtil().getContainerMaterials().contains(to))
-            invalidateChainAbove(block);
+        if (plugin.getChunkHopperManager().isContainerMat(block) || plugin.getConfigUtil().getContainerMaterials().contains(to))
+            plugin.getChunkHopperManager().invalidateChainAbove(block);
     }
 
     @EventHandler
@@ -159,8 +108,8 @@ public class BottomContainerListener implements Listener {
             if (block.getType() == Material.HOPPER && plugin.getChunkHopperManager().isACHLocation(block.getLocation()))
                 it.remove();
 
-            if (isContainerMat(block))
-                invalidateChainAbove(block);
+            if (plugin.getChunkHopperManager().isContainerMat(block))
+                plugin.getChunkHopperManager().invalidateChainAbove(block);
         }
     }
 
