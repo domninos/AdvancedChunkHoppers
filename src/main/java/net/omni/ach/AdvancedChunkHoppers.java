@@ -1,7 +1,7 @@
 package net.omni.ach;
 
 import net.omni.ach.commands.ACHCommand;
-import net.omni.ach.managers.DatabaseManager;
+import net.omni.ach.handlers.ACHItemHandler;
 import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
 import net.omni.ach.hooks.LuckPermsHook;
@@ -9,10 +9,7 @@ import net.omni.ach.hooks.RoseStackerHook;
 import net.omni.ach.listeners.BottomContainerListener;
 import net.omni.ach.listeners.ChunkHopperListener;
 import net.omni.ach.listeners.GUIListener;
-import net.omni.ach.managers.CacheManager;
-import net.omni.ach.managers.ChunkHopperManager;
-import net.omni.ach.managers.GUIManager;
-import net.omni.ach.managers.MessagesManager;
+import net.omni.ach.managers.*;
 import net.omni.ach.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -26,6 +23,8 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
     private LuckPermsHook luckPermsHook;
 
     private ChunkHopperManager chunkHopperManager;
+
+    private ACHItemHandler achItemHandler;
 
     private CacheManager cacheManager;
     private GUIManager guiManager;
@@ -52,6 +51,8 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
         databaseManager.closePool();
 
+        achItemHandler.flush();
+
         sendConsole("<red>Successfully disabled.</red>");
     }
 
@@ -75,6 +76,9 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
         this.chunkHopperManager = new ChunkHopperManager(this);
         chunkHopperManager.init();
+
+        this.achItemHandler = new ACHItemHandler(this);
+        achItemHandler.load();
 
         registerHooks();
 
@@ -177,6 +181,10 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
 
     public CustomCraftingHook getCustomCraftingHook() {
         return customCraftingHook;
+    }
+
+    public ACHItemHandler getAchItemHandler() {
+        return achItemHandler;
     }
 
     public ACHConfig getMessagesConfig() {

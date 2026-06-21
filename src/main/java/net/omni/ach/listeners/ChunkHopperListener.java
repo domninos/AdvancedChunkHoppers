@@ -63,7 +63,7 @@ public class ChunkHopperListener implements Listener {
     public void onHopperPlace(BlockPlaceEvent event) {
         Block block = event.getBlockPlaced();
 
-        if (!plugin.getCustomCraftingHook().isCustomChunkHopper(event.getItemInHand()))
+        if (!plugin.getAchItemHandler().isCustomChunkHopper(event.getItemInHand()))
             return;
 
         Player player = event.getPlayer();

@@ -48,7 +48,7 @@ public class ACHCommand implements CommandExecutor {
                 boolean restartNeeded = plugin.getConfigUtil().reloadConfig();
                 plugin.getMessagesManager().loadMessages();
                 plugin.getChunkHopperManager().reloadPullerTask();
-                plugin.getCustomCraftingHook().loadCustomHopper();
+                plugin.getAchItemHandler().load();
 
                 if (restartNeeded)
                     plugin.sendMessage(sender, Messages.RELOADED
@@ -92,7 +92,7 @@ public class ACHCommand implements CommandExecutor {
                 }
             }
 
-            boolean success = plugin.getCustomCraftingHook().give(target, amount);
+            boolean success = plugin.getAchItemHandler().give(target, amount);
 
             if (success)
                 plugin.sendMessage(sender, Messages.GIVE_SUCCESS.replace("player", target.getName()));

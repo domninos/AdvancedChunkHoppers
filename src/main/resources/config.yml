@@ -12,6 +12,13 @@ hopper:
   size: 54
   title: "<green>ChunkHopper</green>"
 
+  item:
+    material: HOPPER
+    display_name: "<gold><b><i>Chunk Hopper</i></b></gold>"
+    lore:
+      - "<gray>Collects item on a chunk</gray>"
+      - "<gold>Limit 1 chunk hopper per chunk</gold>"
+
   ###
   # you must use an all caps MATERIAL type
   # get the correct material type here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
@@ -72,6 +79,8 @@ blacklist_inventory:
   add_sound: ENTITY_ITEM_PICKUP
   add_sound_volume: 0.5
   add_sound_pitch: 1.0
+
+
 
 # how often the hopper checks for dropped items above it (in ticks, 20 = 1 second)
 # lower = more responsive (items get pulled faster), higher = less cpu usage

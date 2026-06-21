@@ -55,6 +55,10 @@ public class ConfigUtil {
     private float blacklist_add_sound_volume;
     private float blacklist_add_sound_pitch;
 
+    private Material hopperItemMaterial;
+    private String hopperItemDisplayName;
+    private List<String> hopperItemLore;
+
     private int puller_interval_ticks;
 
     private List<Material> container_materials;
@@ -95,6 +99,22 @@ public class ConfigUtil {
         }
 
         this.hopper_title = getAndDefaultString("hopper.title", "<green>ChunkHopper</green>", savedDefaults::getAndAdd);
+
+        ConfigurationSection itemSection = plugin.getConfig().getConfigurationSection("hopper.item");
+        if (itemSection == null) {
+            this.hopperItemMaterial = Material.HOPPER;
+            this.hopperItemDisplayName = "<gold><b><i>Chunk Hopper</i></b></gold>";
+            this.hopperItemLore = List.of("<gray>Collects item on a chunk</gray>", "<gold>Limit 1 chunk hopper per chunk</gold>");
+        } else {
+            String matStr = itemSection.getString("material", "HOPPER");
+            this.hopperItemMaterial = Material.matchMaterial(matStr.toUpperCase());
+            if (this.hopperItemMaterial == null)
+                this.hopperItemMaterial = Material.HOPPER;
+            this.hopperItemDisplayName = itemSection.getString("display_name", "<gold><b><i>Chunk Hopper</i></b></gold>");
+            this.hopperItemLore = itemSection.getStringList("lore");
+            if (this.hopperItemLore.isEmpty())
+                this.hopperItemLore = List.of("<gray>Collects item on a chunk</gray>", "<gold>Limit 1 chunk hopper per chunk</gold>");
+        }
 
         this.filler_mat = getAndDefaultString("hopper.filler.material", "GRAY_STAINED_GLASS_PANE", savedDefaults::getAndAdd);
         this.filler_display_name = getAndDefaultString("hopper.filler.display_name", " ", savedDefaults::getAndAdd);
@@ -388,6 +408,18 @@ public class ConfigUtil {
 
     public float getBlacklistAddSoundPitch() {
         return blacklist_add_sound_pitch;
+    }
+
+    public Material getHopperItemMaterial() {
+        return hopperItemMaterial;
+    }
+
+    public String getHopperItemDisplayName() {
+        return hopperItemDisplayName;
+    }
+
+    public List<String> getHopperItemLore() {
+        return hopperItemLore;
     }
 
     public int getPullerIntervalTicks() {

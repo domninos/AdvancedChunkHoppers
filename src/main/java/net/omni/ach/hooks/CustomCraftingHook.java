@@ -28,13 +28,13 @@ public class CustomCraftingHook implements Listener {
 
     public CustomCraftingHook(AdvancedChunkHoppers plugin) {
         this.plugin = plugin;
-        loadCustomHopper();
     }
 
     public void loadCustomHopper() {
         NamespacedKey recipeKey = NamespacedKey.of(TARGET_KEY);
 
-        if (recipeKey == null) return;
+        if (recipeKey == null)
+            return;
 
         Optional<CustomRecipe<?>> recipeOptional = Optional.ofNullable(CustomCrafting.inst().getRegistries().getRecipes().get(recipeKey));
 
@@ -49,6 +49,7 @@ public class CustomCraftingHook implements Listener {
 
     public void init() {
         this.enabled = true;
+        loadCustomHopper();
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -74,7 +75,9 @@ public class CustomCraftingHook implements Listener {
     }
 
     public boolean isCustomChunkHopper(ItemStack item) {
-        if (!isEnabled() || item == null || item.getType() != Material.HOPPER) return false;
+        if (!isEnabled() || item == null || item.getType() != Material.HOPPER)
+            return false;
+
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
@@ -89,6 +92,10 @@ public class CustomCraftingHook implements Listener {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public ItemStack getCustomHopper() {
+        return custom_hopper;
     }
 
     public boolean give(Player player, int amount) {
