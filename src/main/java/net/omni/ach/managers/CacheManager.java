@@ -57,9 +57,9 @@ public class CacheManager {
 
     public void invalidate(Location location) {
         ChunkHopper hopper = activeHopperCache.remove(location);
-        if (hopper != null) {
+
+        if (hopper != null)
             hopper.save(plugin);
-        }
     }
 
     public void discard(Location location) {

@@ -22,14 +22,17 @@ import java.util.UUID;
 public class ChunkHopper {
 
     private static final long WARNING_COOLDOWN_MS = 5000;
+
     private final Location location;
     private final UUID ownerUUID;
     private final Inventory mainInventory;
     private final Inventory whitelistInventory;
     private final Inventory blacklistInventory;
     private final ChatRenderer renderer;
+
     private long lastFullWarning = 0;
     private boolean dirty = false;
+
     private int containerLimit;
     private transient List<Location> cachedBottomContainers;
 
@@ -62,6 +65,15 @@ public class ChunkHopper {
         setupMainButtons(plugin);
     }
 
+    // TODO cache this
+    /*
+    private final ItemStack filler;
+    private final ItemStack whitelist;
+    private final ItemStack blacklist;
+    private final ItemStack backButton;
+
+    set this during startup
+     */
     private void setupMainButtons(AdvancedChunkHoppers plugin) {
         int size = mainInventory.getSize();
 
