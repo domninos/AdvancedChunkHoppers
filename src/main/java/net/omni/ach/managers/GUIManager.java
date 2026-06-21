@@ -30,7 +30,10 @@ public class GUIManager {
         if (uuid == null)
             return;
 
-        if (!isOwner(player, hopperBlock) && !plugin.getGangsPlusHook().isGangMember(player, uuid)) {
+        boolean allowed = isOwner(player, hopperBlock)
+                || (plugin.getGangsPlusHook().isEnabled() && plugin.getGangsPlusHook().isGangMember(player, uuid));
+
+        if (!allowed) {
             plugin.sendMessage(player, Messages.NO_OPEN_PERMS.toString());
             return;
         }
