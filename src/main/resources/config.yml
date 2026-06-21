@@ -17,7 +17,7 @@ hopper:
     display_name: "<gold><b><i>Chunk Hopper</i></b></gold>"
     lore:
       - "<gray>Collects item on a chunk</gray>"
-      - "<gold>Limit 1 chunk hopper per chunk</gold>"
+      - "<gray>⚠ Limit 1 per chunk ⚠</gray>"
 
   ###
   # you must use an all caps MATERIAL type

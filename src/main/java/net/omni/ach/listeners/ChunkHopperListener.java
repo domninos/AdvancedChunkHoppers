@@ -270,6 +270,7 @@ public class ChunkHopperListener implements Listener {
     public void onChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
         int delay = plugin.getConfigUtil().getPullerIntervalTicks();
+
         plugin.getChunkHopperManager().loadFromChunkAsync(chunk, () ->
                 Bukkit.getScheduler().runTaskLater(plugin, () -> scanChunkForExistingItems(chunk), delay));
     }
