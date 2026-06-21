@@ -30,21 +30,23 @@ public class CustomCraftingHook implements Listener {
         this.plugin = plugin;
     }
 
-    public void loadCustomHopper() {
+    public ItemStack loadCustomHopper() {
         NamespacedKey recipeKey = NamespacedKey.of(TARGET_KEY);
 
         if (recipeKey == null)
-            return;
+            return null;
 
         Optional<CustomRecipe<?>> recipeOptional = Optional.ofNullable(CustomCrafting.inst().getRegistries().getRecipes().get(recipeKey));
 
         if (recipeOptional.isEmpty()) {
             plugin.sendConsole("[ERROR] Could not find a CustomCrafting recipe for key: " + TARGET_KEY);
-            return;
+            return null;
         }
 
         this.custom_hopper = recipeOptional.get().getResult().getItemStack();
         plugin.sendConsole("<yellow>Found " + TARGET_KEY + "!</yellow>");
+
+        return custom_hopper;
     }
 
     public void init() {

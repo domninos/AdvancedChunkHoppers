@@ -77,10 +77,10 @@ public final class AdvancedChunkHoppers extends JavaPlugin {
         this.chunkHopperManager = new ChunkHopperManager(this);
         chunkHopperManager.init();
 
+        registerHooks();
+
         this.achItemHandler = new ACHItemHandler(this);
         achItemHandler.load();
-
-        registerHooks();
 
         registerCommands();
 

@@ -20,7 +20,13 @@ public class ACHItemHandler {
     }
 
     public void load() {
-        this.hopperItem = createItemStack(1);
+        if (plugin.getCustomCraftingHook().isEnabled())
+            this.hopperItem = plugin.getCustomCraftingHook().loadCustomHopper();
+        else {
+            this.hopperItem = createItemStack(1);
+
+            plugin.sendConsole("<green>CustomCrafting not found. Using ACH Item..</green>");
+        }
     }
 
     private ItemStack createItemStack(int amount) {
