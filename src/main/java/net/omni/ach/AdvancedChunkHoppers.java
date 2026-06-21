@@ -1,7 +1,7 @@
 package net.omni.ach;
 
 import net.omni.ach.commands.ACHCommand;
-import net.omni.ach.db.DatabaseManager;
+import net.omni.ach.managers.DatabaseManager;
 import net.omni.ach.hooks.CustomCraftingHook;
 import net.omni.ach.hooks.GangsPlusHook;
 import net.omni.ach.hooks.LuckPermsHook;

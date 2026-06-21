@@ -1,4 +1,4 @@
-package net.omni.ach.db;
+package net.omni.ach.managers;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
