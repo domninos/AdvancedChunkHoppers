@@ -1,7 +1,7 @@
 no_perms: "<red>You do not have permission to use this command.</red>"
 only_players: "<red>Only players can use this command.</red>"
 
-player_not_found: "<red>Player %player% not found.</player>"
+player_not_found: "<red>Player %player% not found.</red>"
 usage: "<red>Invalid arguments. Usage: %usage%</red>"
 unknown_cmd: "<red>Unknown command.</red>"
 
