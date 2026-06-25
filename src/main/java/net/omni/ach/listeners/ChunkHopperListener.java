@@ -23,6 +23,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
@@ -326,7 +327,19 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        plugin.getChunkHopperManager().loadHopperCount(event.getPlayer());
+//        plugin.getChunkHopperManager().loadHopperCount(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerLeave(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+
+        for (ChunkHopper chunkHopper : plugin.getChunkHopperManager().getChunkHoppers().values()) {
+            if (chunkHopper == null || !chunkHopper.getOwnerUUID().equals(player.getUniqueId()))
+                return;
+
+            chunkHopper.save(plugin);
+        }
     }
 
     public void register() {
