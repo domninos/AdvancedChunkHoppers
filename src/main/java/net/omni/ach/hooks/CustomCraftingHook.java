@@ -51,7 +51,6 @@ public class CustomCraftingHook implements Listener {
 
     public void init() {
         this.enabled = true;
-        loadCustomHopper();
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -97,7 +96,7 @@ public class CustomCraftingHook implements Listener {
     }
 
     public ItemStack getCustomHopper() {
-        return custom_hopper;
+        return custom_hopper != null ? custom_hopper : loadCustomHopper();
     }
 
     public boolean give(Player player, int amount) {
