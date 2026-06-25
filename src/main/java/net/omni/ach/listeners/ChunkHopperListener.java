@@ -327,7 +327,7 @@ public class ChunkHopperListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-//        plugin.getChunkHopperManager().loadHopperCount(event.getPlayer());
+        plugin.getChunkHopperManager().loadHopperCount(event.getPlayer());
     }
 
     @EventHandler
