@@ -228,6 +228,15 @@ public class DatabaseManager {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> executeDelete(locationKey));
     }
 
+    public void deleteLocationSync(Location location) {
+        String locationKey = getLocationKey(location);
+
+        if (locationKey.isBlank())
+            return;
+
+        executeDelete(locationKey);
+    }
+
     private void executeDelete(String locationKey) {
         String query = "DELETE FROM chunk_hoppers WHERE location_key = ?";
 
@@ -240,40 +249,22 @@ public class DatabaseManager {
         }
     }
 
-    public void deleteLocationSync(Location location) {
-        String locationKey = getLocationKey(location);
+    public int countHoppersSync(UUID ownerUUID) {
+        String query = "SELECT COUNT(*) FROM chunk_hoppers WHERE owner_uuid = ?";
 
-        if (locationKey.isBlank())
-            return;
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, ownerUUID.toString());
 
-        executeDelete(locationKey);
-    }
-
-    public CompletableFuture<Integer> countHoppersAsync(UUID ownerUUID) {
-        CompletableFuture<Integer> future = new CompletableFuture<>();
-
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            String query = "SELECT COUNT(*) FROM chunk_hoppers WHERE owner_uuid = ?";
-
-            try (Connection connection = getConnection();
-                 PreparedStatement stmt = connection.prepareStatement(query)) {
-                stmt.setString(1, ownerUUID.toString());
-
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        future.complete(rs.getInt(1));
-                        return;
-                    }
-                }
-            } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "Error while counting hoppers in database!", e);
-                future.completeExceptionally(e);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1);
             }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while counting hoppers in database!", e);
+        }
 
-            future.complete(0);
-        });
-
-        return future;
+        return 0;
     }
 
     public void closePool() {
