@@ -30,6 +30,12 @@ public class CustomCraftingHook implements Listener {
         this.plugin = plugin;
     }
 
+    public void init() {
+        this.enabled = true;
+        loadCustomHopper();
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
     public ItemStack loadCustomHopper() {
         NamespacedKey recipeKey = NamespacedKey.of(TARGET_KEY);
 
@@ -47,11 +53,6 @@ public class CustomCraftingHook implements Listener {
         plugin.sendConsole("<yellow>Found " + TARGET_KEY + "!</yellow>");
 
         return custom_hopper;
-    }
-
-    public void init() {
-        this.enabled = true;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler
