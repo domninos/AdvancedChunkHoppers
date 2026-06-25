@@ -42,17 +42,17 @@ public class CacheManager {
         return future;
     }
 
+    public void putIfAbsent(Location location, ChunkHopper hopper) {
+        if (!activeHopperCache.containsKey(location))
+            activeHopperCache.put(location, hopper);
+    }
+
     public boolean hasCache(Location location) {
         return activeHopperCache.containsKey(location);
     }
 
     public ChunkHopper getCachedHopper(Location location) {
         return activeHopperCache.get(location);
-    }
-
-    public void putIfAbsent(Location location, ChunkHopper hopper) {
-        if (!activeHopperCache.containsKey(location))
-            activeHopperCache.put(location, hopper);
     }
 
     public void invalidate(Location location) {
