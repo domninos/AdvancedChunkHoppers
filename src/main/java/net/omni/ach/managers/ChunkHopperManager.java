@@ -4,6 +4,7 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
@@ -303,14 +304,14 @@ public class ChunkHopperManager {
 
     @Nullable
     public ChunkHopper tryInvalidateACH(Block block) {
-        if (!plugin.getChunkHopperManager().isACHLocation(block.getLocation()))
+        if (!isACHLocation(block.getLocation()))
             return null;
 
         ChunkHopper hopper = plugin.getCacheManager().getCachedHopper(block.getLocation());
 
         if (hopper != null) {
             hopper.invalidateBottomContainerCache();
-            plugin.getChunkHopperManager().pushItemsDown(hopper);
+            pushItemsDown(hopper);
         }
 
         return hopper;
@@ -392,6 +393,11 @@ public class ChunkHopperManager {
     // TODO on startup, load all chunk hoppers. on chunk load, check if a chunk hopper is in chunk using chunkKey check
     @Nullable
     private Location findHopperInChunk(Chunk chunk) {
+        for (BlockState state : chunk.getTileEntities()) {
+            if (state.getType() == Material.HOPPER && isACH(state.getBlock()))
+                return state.getBlock().getLocation();
+        }
+
         ChunkHopper ch = chunkHoppers.get(chunkKey(chunk));
 
         return ch == null ? null : ch.getLocation();
@@ -464,14 +470,6 @@ public class ChunkHopperManager {
         achHopperLocations.add(hopper.getLocation());
     }
 
-    private void storeContainerLimit(Block hopperBlock, int maxLimit) {
-        if (!(hopperBlock.getState() instanceof Hopper hopper))
-            return;
-
-        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
-        hopper.update();
-    }
-
     public boolean isACH(Block block) {
         if (!(block.getState() instanceof Hopper hopper))
             return false;
@@ -479,6 +477,14 @@ public class ChunkHopperManager {
         PersistentDataContainer pdc = hopper.getPersistentDataContainer();
 
         return pdc.has(ownerKey, PersistentDataType.STRING);
+    }
+
+    private void storeContainerLimit(Block hopperBlock, int maxLimit) {
+        if (!(hopperBlock.getState() instanceof Hopper hopper))
+            return;
+
+        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
+        hopper.update();
     }
 
     private String[] deChunkKey(String chunkKey) {
