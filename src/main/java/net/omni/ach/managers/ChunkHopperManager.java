@@ -4,7 +4,6 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
@@ -147,25 +146,24 @@ public class ChunkHopperManager {
 
         List<Container> bottoms = hopper.getBottomContainers(plugin);
 
-        if (bottoms.isEmpty())
-            return drop;
-
         ItemStack remaining = drop;
 
-        for (Container bottom : bottoms) {
-            if (!hasSpaceFor(bottom.getInventory(), remaining))
-                continue;
+        if (!bottoms.isEmpty()) {
+            for (Container bottom : bottoms) {
+                if (!hasSpaceFor(bottom.getInventory(), remaining))
+                    continue;
 
-            Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
+                Map<Integer, ItemStack> leftovers = bottom.getInventory().addItem(remaining);
 
-            if (leftovers.isEmpty()) {
-                hopper.markDirty();
-                pushItemsDown(hopper);
-                bottoms.clear();
-                return null;
+                if (leftovers.isEmpty()) {
+                    hopper.markDirty();
+                    pushItemsDown(hopper);
+                    bottoms.clear();
+                    return null;
+                }
+
+                remaining = leftovers.get(0);
             }
-
-            remaining = leftovers.get(0);
         }
 
         int beforeAmount = remaining.getAmount();
@@ -192,7 +190,7 @@ public class ChunkHopperManager {
         return leftover;
     }
 
-    private static String chunkKey(Chunk chunk) {
+    private String chunkKey(Chunk chunk) {
         return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
     }
 
@@ -270,7 +268,6 @@ public class ChunkHopperManager {
             hopper.markDirty();
     }
 
-
     @Nullable
     public ChunkHopper invalidateChainAbove(Block block) {
         if (!isContainerMat(block))
@@ -303,7 +300,6 @@ public class ChunkHopperManager {
     public boolean isContainerMat(Block block) {
         return plugin.getConfigUtil().getContainerMaterials().contains(block.getType());
     }
-
 
     @Nullable
     public ChunkHopper tryInvalidateACH(Block block) {
@@ -372,7 +368,9 @@ public class ChunkHopperManager {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     recalculateLimit(hopper);
                     registerHopper(chunk, hopper);
+
                     plugin.getCacheManager().putIfAbsent(location, hopper);
+
                     if (afterRegister != null)
                         afterRegister.run();
                 });
@@ -390,14 +388,13 @@ public class ChunkHopperManager {
         return chunkHoppers.containsKey(chunkKey(chunk));
     }
 
+    // TODO instead of checking for tile entities, check for chunkKey
+    // TODO on startup, load all chunk hoppers. on chunk load, check if a chunk hopper is in chunk using chunkKey check
     @Nullable
     private Location findHopperInChunk(Chunk chunk) {
-        for (BlockState state : chunk.getTileEntities()) {
-            if (state.getType() == Material.HOPPER && isACH(state.getBlock()))
-                return state.getBlock().getLocation();
-        }
+        ChunkHopper ch = chunkHoppers.get(chunkKey(chunk));
 
-        return null;
+        return ch == null ? null : ch.getLocation();
     }
 
     public CompletableFuture<ChunkHopper> load(Location location) {
@@ -467,6 +464,14 @@ public class ChunkHopperManager {
         achHopperLocations.add(hopper.getLocation());
     }
 
+    private void storeContainerLimit(Block hopperBlock, int maxLimit) {
+        if (!(hopperBlock.getState() instanceof Hopper hopper))
+            return;
+
+        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
+        hopper.update();
+    }
+
     public boolean isACH(Block block) {
         if (!(block.getState() instanceof Hopper hopper))
             return false;
@@ -476,12 +481,8 @@ public class ChunkHopperManager {
         return pdc.has(ownerKey, PersistentDataType.STRING);
     }
 
-    private void storeContainerLimit(Block hopperBlock, int maxLimit) {
-        if (!(hopperBlock.getState() instanceof Hopper hopper))
-            return;
-
-        hopper.getPersistentDataContainer().set(containerLimitKey, PersistentDataType.INTEGER, maxLimit);
-        hopper.update();
+    private String[] deChunkKey(String chunkKey) {
+        return chunkKey.split(":");
     }
 
     public int readContainerLimitSync(Block block) {
