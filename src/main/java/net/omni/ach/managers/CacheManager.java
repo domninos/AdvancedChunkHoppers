@@ -4,6 +4,7 @@ import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
 import org.bukkit.Location;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +34,8 @@ public class CacheManager {
 
             if (hopper != null) {
                 activeHopperCache.put(location, hopper);
+
+                // update hoppper count
                 future.complete(hopper);
             } else {
                 future.complete(null);
