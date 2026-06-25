@@ -2,7 +2,6 @@ package net.omni.ach.listeners;
 
 import net.omni.ach.AdvancedChunkHoppers;
 import net.omni.ach.chunkhopper.ChunkHopper;
-import net.omni.ach.chunkhopper.ChunkHopperHolder;
 import net.omni.ach.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -11,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,8 +25,8 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -107,6 +107,12 @@ public class ChunkHopperListener implements Listener {
                 player.getUniqueId().toString()
         );
 
+        pdc.set(
+                plugin.getChunkHopperManager().getAchKey(),
+                PersistentDataType.BYTE,
+                (byte) 1
+        );
+
         hopper.update(true, false);
 
         ChunkHopper hopperObj = new ChunkHopper(block.getLocation(), player.getUniqueId(), plugin);
@@ -123,7 +129,6 @@ public class ChunkHopperListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> scanChunkForExistingItems(chunk), delay);
         else
             scanChunkForExistingItems(chunk);
-
 
         if (plugin.getConfigUtil().getContainerMaterials().contains(against.getType())) {
             // is a container -> try to suck
@@ -183,6 +188,8 @@ public class ChunkHopperListener implements Listener {
         Chunk chunk = block.getChunk();
 
         if (hopper != null) {
+            event.setDropItems(false);
+
             int itemSlots = hopper.getMainInventory().getSize() - 9;
             Location dropLoc = block.getLocation().add(0.5, 0.5, 0.5);
 
@@ -197,15 +204,9 @@ public class ChunkHopperListener implements Listener {
             }
 
             // close the inventories for all viewers
-            for (Player viewer : block.getLocation().getNearbyPlayers(10)) {
-                if (viewer == null)
-                    continue;
-
-                Inventory top = viewer.getOpenInventory().getTopInventory();
-
-                if (top.getHolder() instanceof ChunkHopperHolder holder && holder.hopper().equals(hopper))
+            for (HumanEntity viewer : hopper.getMainInventory().getViewers())
+                if (viewer != null)
                     viewer.closeInventory();
-            }
 
             plugin.getChunkHopperManager().unregisterHopper(chunk);
             plugin.getCacheManager().discard(block.getLocation());
@@ -216,10 +217,31 @@ public class ChunkHopperListener implements Listener {
                 block.getWorld().dropItemNaturally(dropLoc, item);
 
             items.clear(); // garbage
+
+            ItemStack hopperToGive;
+
+            // drop the chunk hopper itself
+            if (plugin.getCustomCraftingHook().isEnabled())
+                hopperToGive = plugin.getCustomCraftingHook().getCustomHopper();
+            else
+                hopperToGive = plugin.getAchItemHandler().getItemStack(1);
+
+            ItemMeta meta = hopperToGive.getItemMeta();
+            if (meta != null) {
+                PersistentDataContainer pdc = meta.getPersistentDataContainer();
+                if (!pdc.has(plugin.getChunkHopperManager().getAchKey(), PersistentDataType.BYTE)) {
+                    pdc.set(plugin.getChunkHopperManager().getAchKey(), PersistentDataType.BYTE, (byte) 1);
+
+                    hopperToGive.setItemMeta(meta);
+                }
+            }
+
+            block.getWorld().dropItemNaturally(dropLoc, hopperToGive);
         } else {
             plugin.getChunkHopperManager().unregisterHopper(chunk);
 
             UUID ownerUUID = plugin.getGuiManager().getOwnerUUID(block);
+
             if (ownerUUID != null)
                 plugin.getChunkHopperManager().removeHopperCount(ownerUUID);
         }
@@ -229,7 +251,8 @@ public class ChunkHopperListener implements Listener {
         if (max != -1) {
             int currentCount = plugin.getChunkHopperManager().getHopperCount(player.getUniqueId());
 
-            if (currentCount < 0) currentCount = 0;
+            if (currentCount < 0)
+                currentCount = 0;
 
             plugin.sendMessage(player, Messages.HOPPERS_NOW.replace("count", String.valueOf(currentCount)));
         }
