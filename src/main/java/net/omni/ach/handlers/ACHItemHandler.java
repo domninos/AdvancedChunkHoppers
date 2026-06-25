@@ -25,7 +25,7 @@ public class ACHItemHandler {
         else {
             this.hopperItem = createItemStack(1);
 
-            plugin.sendConsole("<green>CustomCrafting not found. Using ACH Item..</green>");
+            plugin.sendConsole("<yellow>CustomCrafting not found. Using ACH Item..</yellow>");
         }
     }
 
